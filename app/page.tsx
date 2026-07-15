@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { DeveloperMode } from "./DeveloperMode";
+import { CollapseRightIcon, ExpandLeftIcon } from "./icons";
 
 type ProductType = "virtual" | "physical";
 type ProductTag = "新品" | "热门" | "限时";
@@ -56,7 +58,7 @@ type Store = {
 
 type ViewMode = "student" | "admin";
 type StudentPage = "mall" | "orders";
-type AdminPage = "dashboard" | "products" | "orders" | "ledger" | "reports";
+type AdminPage = "products" | "orders" | "ledger" | "reports";
 
 const STORAGE_KEY = "points-mall-mvp-state";
 
@@ -233,8 +235,9 @@ export default function PointsMallMvp() {
   const [store, setStore] = useState<Store>(initialStore);
   const [hydrated, setHydrated] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("student");
+  const [viewSwitcherOpen, setViewSwitcherOpen] = useState(false);
   const [studentPage, setStudentPage] = useState<StudentPage>("mall");
-  const [adminPage, setAdminPage] = useState<AdminPage>("dashboard");
+  const [adminPage, setAdminPage] = useState<AdminPage>("products");
   const [category, setCategory] = useState<"all" | ProductType>("all");
   const [orderFilter, setOrderFilter] = useState<"all" | OrderStatus>("all");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -264,6 +267,17 @@ export default function PointsMallMvp() {
 
   const selectedProduct = store.products.find((item) => item.id === selectedProductId);
   const confirmProduct = store.products.find((item) => item.id === confirmProductId);
+  const currentPageLabel =
+    viewMode === "student"
+      ? studentPage === "mall"
+        ? "商城首页"
+        : "我的兑换"
+      : {
+          products: "商品管理",
+          orders: "订单管理",
+          ledger: "积分流水",
+          reports: "数据报表",
+        }[adminPage];
 
   const stats = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -463,28 +477,21 @@ export default function PointsMallMvp() {
           <h1>积分商城原型</h1>
         </div>
         <div className="topbar-actions">
-          <div className="segmented">
-            <button
-              className={viewMode === "student" ? "active" : ""}
-              onClick={() => setViewMode("student")}
-            >
-              学生视角
-            </button>
-            <button
-              className={viewMode === "admin" ? "active" : ""}
-              onClick={() => setViewMode("admin")}
-            >
-              后台视角
-            </button>
-          </div>
-          <div className="student-points">
+          <div className="student-points" data-dev-note="student-points">
             {store.student.name}：<strong>{store.student.points}</strong> 积分
           </div>
-          <button className="ghost-button" onClick={resetDemo}>
+          <button className="ghost-button" data-dev-note="reset-demo" onClick={resetDemo}>
             重置演示数据
           </button>
         </div>
       </header>
+
+      <ViewModeSwitcher
+        open={viewSwitcherOpen}
+        value={viewMode}
+        onToggle={() => setViewSwitcherOpen((current) => !current)}
+        onChange={setViewMode}
+      />
 
       <section className="workspace">
         {viewMode === "student" ? (
@@ -521,7 +528,6 @@ export default function PointsMallMvp() {
           <>
             <nav className="side-nav" aria-label="后台菜单">
               {[
-                ["dashboard", "后台首页"],
                 ["products", "商品管理"],
                 ["orders", "订单管理"],
                 ["ledger", "积分流水"],
@@ -537,7 +543,6 @@ export default function PointsMallMvp() {
               ))}
             </nav>
             <section className="panel-area">
-              {adminPage === "dashboard" && <Dashboard stats={stats} />}
               {adminPage === "products" && (
                 <ProductAdmin
                   products={store.products}
@@ -576,7 +581,67 @@ export default function PointsMallMvp() {
       {editingProduct && (
         <ProductEditor product={editingProduct} onCancel={() => setEditingProduct(null)} onSave={saveProduct} />
       )}
+
+      <DeveloperMode
+        context={{
+          view: viewMode === "student" ? "学生端" : "后台端",
+          page: currentPageLabel,
+          studentPoints: store.student.points,
+          productCount: store.products.length,
+          activeProductCount: store.products.filter((product) => product.status === "active").length,
+          pendingOrderCount: store.orders.filter((order) => order.status === "pending_pickup").length,
+          completedOrderCount: store.orders.filter((order) => order.status === "completed").length,
+          cancelledOrderCount: store.orders.filter((order) => order.status === "cancelled").length,
+        }}
+      />
     </main>
+  );
+}
+
+function ViewModeSwitcher({
+  open,
+  value,
+  onToggle,
+  onChange,
+}: {
+  open: boolean;
+  value: ViewMode;
+  onToggle: () => void;
+  onChange: (value: ViewMode) => void;
+}) {
+  return (
+    <aside className={`view-switcher ${open ? "open" : "collapsed"}`} aria-label="视角切换">
+      <button
+        className="view-switcher-toggle"
+        data-dev-note="view-switch"
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-label={open ? "折叠视角切换" : "展开视角切换"}
+      >
+        {open ? <CollapseRightIcon aria-hidden /> : <ExpandLeftIcon aria-hidden />}
+      </button>
+      {open && (
+        <div className="view-switcher-panel">
+          <button
+            type="button"
+            className={value === "student" ? "active" : ""}
+            data-dev-note="view-switch"
+            onClick={() => onChange("student")}
+          >
+            学生视角
+          </button>
+          <button
+            type="button"
+            className={value === "admin" ? "active" : ""}
+            data-dev-note="view-switch"
+            onClick={() => onChange("admin")}
+          >
+            后台视角
+          </button>
+        </div>
+      )}
+    </aside>
   );
 }
 
@@ -596,13 +661,13 @@ function StudentMall({
   onConfirm: (id: string) => void;
 }) {
   return (
-    <div>
+    <div data-dev-note="student-mall-page">
       <PanelHeader
         title="学生端商城首页"
         desc="学生浏览上架商品，按积分和库存状态发起兑换。"
       />
       <div className="toolbar">
-        <div className="segmented compact">
+        <div className="segmented compact" data-dev-note="product-category-filter">
           {[
             ["all", "全部"],
             ["virtual", "虚拟商品"],
@@ -619,7 +684,7 @@ function StudentMall({
           const soldOut = product.stock <= 0;
           const notEnough = studentPoints < product.points;
           return (
-            <article className="product-card" key={product.id}>
+            <article className="product-card" data-dev-note="product-card" key={product.id}>
               <div className="product-image">{product.image}</div>
               <div className="card-head">
                 <h3>{product.name}</h3>
@@ -628,7 +693,7 @@ function StudentMall({
               <p>{typeText[product.type]} · {product.delivery}</p>
               <div className="meta-row">
                 <strong>{product.points} 积分</strong>
-                <span>库存 {product.stock}</span>
+                <span data-dev-note="product-stock">库存 {product.stock}</span>
               </div>
               <div className="status-line">
                 {soldOut ? "已售罄" : notEnough ? "积分不足" : "可兑换"}
@@ -637,7 +702,7 @@ function StudentMall({
                 <button className="ghost-button" onClick={() => onShowDetail(product.id)}>
                   详情
                 </button>
-                <button className="primary-button" disabled={soldOut || notEnough} onClick={() => onConfirm(product.id)}>
+                <button className="primary-button" data-dev-note="exchange-button" disabled={soldOut || notEnough} onClick={() => onConfirm(product.id)}>
                   立即兑换
                 </button>
               </div>
@@ -662,10 +727,10 @@ function StudentOrders({
 }) {
   const filteredOrders = orders.filter((order) => filter === "all" || order.status === filter);
   return (
-    <div>
+    <div data-dev-note="student-orders-page">
       <PanelHeader title="我的兑换 / 订单页" desc="学生查看兑换记录，待领取实物商品可在领取前取消。" />
       <div className="toolbar">
-        <div className="segmented compact">
+        <div className="segmented compact" data-dev-note="student-order-filter">
           {[
             ["all", "全部"],
             ["pending_pickup", "待领取"],
@@ -688,7 +753,7 @@ function StudentOrders({
           order.createdAt,
           statusText[order.status],
           order.status === "pending_pickup" && order.productType === "physical" ? (
-            <button className="danger-button" onClick={() => onCancel(order.id)}>
+            <button className="danger-button" data-dev-note="cancel-order" onClick={() => onCancel(order.id)}>
               取消兑换
             </button>
           ) : order.productType === "virtual" ? (
@@ -698,36 +763,6 @@ function StudentOrders({
           ),
         ])}
       />
-    </div>
-  );
-}
-
-function Dashboard({ stats }: { stats: ReturnType<typeof useDashboardStats> }) {
-  return (
-    <div>
-      <PanelHeader title="后台首页 / 数据看板" desc="运营查看订单、积分消耗、库存预警和商品兑换表现。" />
-      <MetricGrid
-        metrics={[
-          ["今日兑换订单数", stats.todayOrderCount],
-          ["本月消耗积分", stats.monthPoints],
-          ["待处理订单数", stats.pendingCount],
-          ["库存预警商品数", stats.stockWarningCount],
-        ]}
-      />
-      <div className="two-column">
-        <BarList
-          title="热门兑换商品 TOP 5"
-          items={stats.topProducts.map((item) => ({ label: item.name, value: item.count }))}
-        />
-        <StatusBlocks
-          title="订单状态分布"
-          items={[
-            ["待领取", stats.orderStatus.pending_pickup],
-            ["已完成", stats.orderStatus.completed],
-            ["已取消", stats.orderStatus.cancelled],
-          ]}
-        />
-      </div>
     </div>
   );
 }
@@ -744,8 +779,8 @@ function ProductAdmin({
   onToggle: (id: string) => void;
 }) {
   return (
-    <div>
-      <PanelHeader title="后台商品管理页" desc="配置商品、上下架、查看类型和库存状态。" action={<button className="primary-button" onClick={onAdd}>新增商品</button>} />
+    <div data-dev-note="admin-products-page">
+      <PanelHeader title="后台商品管理页" desc="配置商品、上下架、查看类型和库存状态。" action={<button className="primary-button" data-dev-note="add-product" onClick={onAdd}>新增商品</button>} />
       <DataTable
         headers={["商品", "类型", "积分", "库存", "标签", "状态", "交付方式", "操作"]}
         rows={products.map((product) => [
@@ -754,11 +789,11 @@ function ProductAdmin({
           `${product.points}`,
           product.stock <= 3 && product.type === "physical" ? `预警：${product.stock}` : `${product.stock}`,
           product.tag,
-          product.status === "active" ? "上架" : "下架",
+          <span data-dev-note="product-status">{product.status === "active" ? "上架" : "下架"}</span>,
           product.delivery,
           <div className="inline-actions" key={product.id}>
-            <button className="ghost-button" onClick={() => onEdit(product)}>编辑</button>
-            <button className="ghost-button" onClick={() => onToggle(product.id)}>
+            <button className="ghost-button" data-dev-note="edit-product" onClick={() => onEdit(product)}>编辑</button>
+            <button className="ghost-button" data-dev-note="product-status" onClick={() => onToggle(product.id)}>
               {product.status === "active" ? "下架" : "上架"}
             </button>
           </div>,
@@ -778,7 +813,7 @@ function AdminOrders({
   onCancel: (id: string) => void;
 }) {
   return (
-    <div>
+    <div data-dev-note="admin-orders-page">
       <PanelHeader title="后台订单管理页" desc="虚拟商品兑换后立即完成；实物商品待领取，可确认领取或取消。" />
       <DataTable
         headers={["订单号", "学生 / 手机号", "商品", "类型", "积分", "下单时间", "状态", "操作"]}
@@ -789,11 +824,11 @@ function AdminOrders({
           typeText[order.productType],
           `${order.points}`,
           order.createdAt,
-          statusText[order.status],
+          <span data-dev-note="order-status">{statusText[order.status]}</span>,
           order.status === "pending_pickup" ? (
             <div className="inline-actions" key={order.id}>
-              <button className="primary-button" onClick={() => onComplete(order.id)}>确认领取</button>
-              <button className="danger-button" onClick={() => onCancel(order.id)}>取消订单</button>
+              <button className="primary-button" data-dev-note="complete-order" onClick={() => onComplete(order.id)}>确认领取</button>
+              <button className="danger-button" data-dev-note="cancel-order" onClick={() => onCancel(order.id)}>取消订单</button>
             </div>
           ) : (
             "只读"
@@ -806,14 +841,14 @@ function AdminOrders({
 
 function LedgerTable({ ledgers }: { ledgers: Ledger[] }) {
   return (
-    <div>
+    <div data-dev-note="ledger-page">
       <PanelHeader title="后台积分流水页" desc="展示兑换扣减、取消返还、后台调整和虚拟发放记录。" />
       <DataTable
         headers={["学生", "类型", "积分变动", "关联订单", "时间", "备注"]}
         rows={ledgers.map((ledger) => [
           ledger.studentName,
           ledger.type,
-          ledger.change > 0 ? `+${ledger.change}` : `${ledger.change}`,
+          <span data-dev-note="ledger-change">{ledger.change > 0 ? `+${ledger.change}` : `${ledger.change}`}</span>,
           ledger.orderId,
           ledger.createdAt,
           ledger.note,
@@ -825,7 +860,7 @@ function LedgerTable({ ledgers }: { ledgers: Ledger[] }) {
 
 function Reports({ stats }: { stats: ReturnType<typeof useDashboardStats> }) {
   return (
-    <div>
+    <div data-dev-note="reports-page">
       <PanelHeader title="数据报表" desc="MVP 先用简单图表表达报表方向，不做复杂 BI。" />
       <div className="two-column">
         <StatusBlocks
@@ -865,18 +900,18 @@ function ProductDetail({
   const disabled = product.status !== "active" || product.stock <= 0 || studentPoints < product.points;
   return (
     <Modal title="学生端商品详情页" onClose={onClose}>
-      <div className="detail-layout">
+      <div className="detail-layout" data-dev-note="product-detail">
         <div className="product-image large">{product.image}</div>
         <div>
           <h2>{product.name}</h2>
           <p>{product.description}</p>
           <dl className="detail-list">
             <div><dt>所需积分</dt><dd>{product.points}</dd></div>
-            <div><dt>当前库存</dt><dd>{product.stock}</dd></div>
+            <div><dt>当前库存</dt><dd data-dev-note="product-stock">{product.stock}</dd></div>
             <div><dt>商品类型</dt><dd>{typeText[product.type]}</dd></div>
             <div><dt>兑换说明</dt><dd>{product.delivery}</dd></div>
           </dl>
-          <button className="primary-button" disabled={disabled} onClick={onConfirm}>
+          <button className="primary-button" data-dev-note="exchange-button" disabled={disabled} onClick={onConfirm}>
             立即兑换
           </button>
         </div>
@@ -896,7 +931,7 @@ function ConfirmExchange({
 }) {
   return (
     <Modal title="兑换确认" onClose={onCancel}>
-      <div className="confirm-copy">
+      <div className="confirm-copy" data-dev-note="exchange-confirm">
         <h2>{product.name}</h2>
         <p>本次将扣除 {product.points} 积分。</p>
         {product.type === "virtual" ? (
@@ -913,7 +948,7 @@ function ConfirmExchange({
       </div>
       <div className="modal-actions">
         <button className="ghost-button" onClick={onCancel}>再想想</button>
-        <button className="primary-button" onClick={onSubmit}>确认兑换</button>
+        <button className="primary-button" data-dev-note="exchange-confirm" onClick={onSubmit}>确认兑换</button>
       </div>
     </Modal>
   );
@@ -932,7 +967,7 @@ function ProductEditor({
   const canSave = draft.name.trim() && draft.points > 0 && draft.stock >= 0 && draft.description.trim();
   return (
     <Modal title={product.id ? "编辑商品" : "新增商品"} onClose={onCancel}>
-      <div className="form-grid">
+      <div className="form-grid" data-dev-note="product-editor">
         <label>
           商品名称
           <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
@@ -978,7 +1013,7 @@ function ProductEditor({
       </div>
       <div className="modal-actions">
         <button className="ghost-button" onClick={onCancel}>取消</button>
-        <button className="primary-button" disabled={!canSave} onClick={() => onSave(draft)}>保存商品</button>
+        <button className="primary-button" data-dev-note="product-editor" disabled={!canSave} onClick={() => onSave(draft)}>保存商品</button>
       </div>
     </Modal>
   );
@@ -992,19 +1027,6 @@ function PanelHeader({ title, desc, action }: { title: string; desc: string; act
         <p>{desc}</p>
       </div>
       {action}
-    </div>
-  );
-}
-
-function MetricGrid({ metrics }: { metrics: [string, number][] }) {
-  return (
-    <div className="metric-grid">
-      {metrics.map(([label, value]) => (
-        <div className="metric-card" key={label}>
-          <span>{label}</span>
-          <strong>{value}</strong>
-        </div>
-      ))}
     </div>
   );
 }

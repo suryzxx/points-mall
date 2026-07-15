@@ -25,6 +25,10 @@ npm test
 npm run lint
 ```
 
+## 开发说明模式
+
+页面右下角点击“开发说明”，或使用快捷键 `Ctrl/Cmd + Shift + D`，可以切换开发模式。开发模式会冻结页面操作，只展示当前页面的业务规则、字段说明和动作说明。
+
 ## GitHub Pages
 
 本项目已包含 GitHub Actions 配置：
