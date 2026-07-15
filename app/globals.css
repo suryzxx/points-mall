@@ -193,11 +193,431 @@ button:disabled {
   font-weight: 700;
 }
 
+.view-switcher-panel .view-switcher-reset {
+  border-color: #f2b8b5;
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
 .workspace {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);
   gap: 18px;
   padding: 18px 24px 32px;
+}
+
+.student-theme {
+  --student-purple: #887ef1;
+  --student-deep: #2f1d73;
+  --student-white: #ffffff;
+  --student-black: #323135;
+  --student-gray: #9b98a9;
+  --student-yellow: #ffee2e;
+  --student-bg-strong: #a69cfd;
+  --student-bg-base: #f6f6fd;
+  --student-bg-soft: #dbdef6;
+  --student-bg-top: #f2f0ff;
+  --student-bg-bottom: #cbbfff;
+  background:
+    radial-gradient(circle at 6% 0%, rgba(166, 156, 253, 0.42), transparent 28%),
+    radial-gradient(circle at 88% 8%, rgba(219, 222, 246, 0.72), transparent 30%),
+    linear-gradient(180deg, var(--student-bg-top) 0%, var(--student-bg-base) 38%, var(--student-bg-soft) 68%, var(--student-bg-bottom) 100%);
+  color: var(--student-black);
+  font-family: "Arial Rounded MT Bold", "Trebuchet MS", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+}
+
+.student-theme .topbar {
+  border-bottom: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.student-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  min-height: 82px;
+  padding: 16px clamp(18px, 3vw, 48px);
+}
+
+.student-theme .topbar h1 {
+  color: var(--student-deep);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-shadow:
+    0 2px 0 #ffffff,
+    0 5px 0 rgba(136, 126, 241, 0.22);
+}
+
+.student-theme .eyebrow {
+  color: var(--student-gray);
+  font-weight: 800;
+}
+
+.student-page-tabs {
+  display: inline-flex;
+  align-items: center;
+  justify-self: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.student-page-tabs button {
+  width: 178px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #7d72e3;
+  padding: 16px 24px;
+  font-family: "Alibaba PuHuiTi 3.0", "Alibaba PuHuiTi", "Arial Rounded MT Bold", "Trebuchet MS", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.student-page-tabs button::after {
+  content: none;
+}
+
+.student-page-tabs button.active {
+  width: 173px;
+  background: #7d72e3;
+  color: #ffffff;
+  box-shadow: 0 -4px 0 0 rgba(255, 255, 255, 0.25) inset;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.student-page-tabs svg {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: block;
+}
+
+.student-theme .student-points {
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  font-weight: 900;
+}
+
+.student-theme .student-points strong {
+  color: var(--student-purple);
+}
+
+.student-theme .topbar .ghost-button {
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--student-deep);
+  font-weight: 900;
+  padding: 0;
+}
+
+.student-workspace {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 8px clamp(16px, 3vw, 42px) 42px;
+}
+
+.student-panel-area {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.student-mall-view {
+  display: grid;
+  gap: 24px;
+}
+
+.student-hero {
+  min-height: 210px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  align-items: center;
+  gap: 24px;
+  overflow: hidden;
+  border-radius: 32px;
+  padding: clamp(24px, 4vw, 42px);
+  background:
+    url("/hero-bg.png") center / cover no-repeat,
+    var(--student-purple);
+  color: #ffffff;
+  box-shadow: 0 24px 60px rgba(47, 29, 115, 0.26);
+}
+
+.student-hero h2,
+.student-shop-head h2,
+.student-card-copy h3 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.student-hero h2 {
+  max-width: 520px;
+  margin-top: 8px;
+  font-size: clamp(34px, 5vw, 58px);
+  line-height: 1.02;
+}
+
+.student-hero p {
+  max-width: 560px;
+  margin: 14px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.75;
+}
+
+.student-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: rgba(255, 238, 46, 0.18);
+  color: var(--student-yellow) !important;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.student-wallet {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 28px;
+  padding: 22px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.student-wallet span,
+.student-wallet small {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.student-wallet strong {
+  color: var(--student-yellow);
+  font-size: 48px;
+  line-height: 1;
+}
+
+.student-shop-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.student-shop-head h2 {
+  color: var(--student-deep);
+  font-size: 26px;
+}
+
+.student-shop-head p {
+  margin: 6px 0 0;
+  color: var(--student-gray);
+}
+
+.student-product-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(14px, 2vw, 24px);
+  align-items: stretch;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.student-product-card {
+  min-width: 0;
+  gap: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(47, 29, 115, 0.1);
+  border-radius: 24px;
+  padding: 12px;
+  background: rgba(246, 246, 253, 0.72);
+  box-shadow: 0 18px 44px rgba(47, 29, 115, 0.1);
+}
+
+.student-card-artwork {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #e9e5ff;
+}
+
+.student-product-card .product-image {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 0;
+  border-radius: inherit;
+  background: #e9e5ff;
+  color: #817d91;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+}
+
+.student-card-copy {
+  display: grid;
+  padding: 0 4px;
+}
+
+.student-type {
+  color: var(--student-purple);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.student-card-copy h3 {
+  color: var(--student-black);
+  font-size: clamp(17px, 2vw, 21px);
+  line-height: 1.25;
+}
+
+.student-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.student-card-footer strong {
+  color: var(--student-deep);
+  font-size: 25px;
+}
+
+.student-card-footer strong span {
+  margin-left: 3px;
+  color: var(--student-gray);
+  font-size: 12px;
+}
+
+.student-product-card .tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border-radius: 999px;
+  background: var(--student-yellow);
+  color: var(--student-deep);
+  font-weight: 900;
+}
+
+.student-product-card .card-actions {
+  grid-template-columns: 1fr;
+  padding-top: 4px;
+}
+
+.student-theme .primary-button,
+.student-theme .student-product-card .ghost-button {
+  min-height: 40px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.student-theme .primary-button {
+  background: var(--student-purple);
+}
+
+.student-theme .primary-button:hover {
+  background: var(--student-deep);
+}
+
+.student-theme .student-product-card .ghost-button {
+  border-color: rgba(47, 29, 115, 0.14);
+  color: var(--student-deep);
+}
+
+.student-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 22px;
+  padding: 22px 0 4px;
+}
+
+.student-pagination button {
+  width: 56px;
+  height: 56px;
+  display: inline-grid;
+  place-items: center;
+  border: 2px solid var(--student-deep);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--student-black);
+  padding: 0;
+  font-family: "Alibaba PuHuiTi 3.0", "Alibaba PuHuiTi", "Arial Rounded MT Bold", "Trebuchet MS", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.student-pagination button.active {
+  border-color: var(--student-deep);
+  background: var(--student-deep);
+  color: #ffffff;
+}
+
+.student-pagination button:disabled {
+  opacity: 0.35;
+}
+
+.student-pagination svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.student-orders-view {
+  border-radius: 28px;
+  padding: clamp(16px, 3vw, 26px);
+  background: rgba(246, 246, 253, 0.72);
+  box-shadow: 0 18px 44px rgba(47, 29, 115, 0.1);
+}
+
+.student-orders-view .panel-header h2 {
+  color: var(--student-deep);
+}
+
+.student-orders-view .segmented {
+  border: 0;
+  border-radius: 999px;
+  background: #f4f2ff;
+}
+
+.student-orders-view .segmented button {
+  border-radius: 999px;
+}
+
+.student-orders-view .segmented button.active {
+  background: var(--student-purple);
 }
 
 .side-nav {
@@ -234,6 +654,12 @@ button:disabled {
   padding: 18px;
 }
 
+.panel-area.student-panel-area {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
 .panel-header {
   display: flex;
   align-items: flex-start;
@@ -264,6 +690,16 @@ button:disabled {
   gap: 14px;
 }
 
+.product-grid.student-product-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(14px, 2vw, 24px);
+  align-items: stretch;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
 .product-card,
 .chart-box {
   border: 1px solid var(--line);
@@ -279,16 +715,17 @@ button:disabled {
 .product-image {
   display: grid;
   place-items: center;
-  height: 92px;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   border: 1px solid #cdd6e6;
-  background: #f3f6fb;
+  background: #e9e5ff;
   color: var(--primary-dark);
   font-size: 32px;
   font-weight: 700;
 }
 
 .product-image.large {
-  height: 220px;
+  width: min(320px, 100%);
   min-width: 220px;
 }
 
@@ -467,7 +904,7 @@ tr:last-child td {
 }
 
 .modal {
-  width: min(760px, 100%);
+  width: min(860px, 100%);
   max-height: min(760px, 90vh);
   overflow: auto;
   border: 1px solid var(--line);
@@ -512,9 +949,72 @@ tr:last-child td {
   margin: 0;
 }
 
+.detail-list.compact {
+  margin: 14px 0;
+}
+
+.confirm-exchange-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.confirm-copy h2 {
+  margin: 6px 0 8px;
+}
+
 .confirm-copy ul {
   margin: 12px 0 0;
   padding-left: 20px;
+}
+
+.quantity-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.quantity-picker span {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.quantity-picker div {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quantity-picker button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--foreground);
+  padding: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.quantity-picker input {
+  width: 64px;
+  height: 34px;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.confirm-total {
+  margin: 14px 0 0;
+}
+
+.confirm-total strong {
+  color: var(--primary-dark);
+  font-size: 22px;
 }
 
 .form-grid {
@@ -753,6 +1253,12 @@ textarea {
   font-weight: 700;
 }
 
+@media (max-width: 1200px) {
+  .product-grid.student-product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .topbar {
     align-items: flex-start;
@@ -768,6 +1274,40 @@ textarea {
     padding: 14px;
   }
 
+  .student-workspace {
+    gap: 14px;
+    padding: 8px 14px 30px;
+  }
+
+  .student-topbar {
+    grid-template-columns: 1fr;
+    justify-items: start;
+    gap: 14px;
+  }
+
+  .student-page-tabs {
+    justify-self: start;
+    gap: 8px;
+  }
+
+  .student-hero {
+    grid-template-columns: 1fr;
+    border-radius: 26px;
+  }
+
+  .student-hero h2 {
+    font-size: 40px;
+  }
+
+  .student-shop-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .product-grid.student-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .side-nav {
     position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -775,6 +1315,7 @@ textarea {
 
   .two-column,
   .detail-layout,
+  .confirm-exchange-layout,
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -792,5 +1333,61 @@ textarea {
     right: 14px;
     top: 56px;
     width: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .student-theme .topbar {
+    padding: 16px;
+  }
+
+  .student-page-tabs {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .student-page-tabs button {
+    width: min(178px, calc((100vw - 40px) / 2));
+  }
+
+  .student-page-tabs button.active {
+    width: min(173px, calc((100vw - 40px) / 2));
+  }
+
+  .student-theme .topbar-actions,
+  .student-theme .student-points,
+  .student-theme .topbar .ghost-button {
+    width: 100%;
+  }
+
+  .student-theme .topbar .ghost-button {
+    justify-content: center;
+  }
+
+  .student-hero {
+    min-height: 0;
+    padding: 22px;
+  }
+
+  .student-hero h2 {
+    font-size: 34px;
+  }
+
+  .student-wallet strong {
+    font-size: 40px;
+  }
+
+  .student-theme .student-category-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .student-theme .student-category-tabs button {
+    flex: 1 0 auto;
+  }
+
+  .product-grid.student-product-grid {
+    grid-template-columns: 1fr;
   }
 }

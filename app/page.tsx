@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { DeveloperMode } from "./DeveloperMode";
-import { CollapseRightIcon, ExpandLeftIcon } from "./icons";
+import { ArrowRightIcon, CollapseRightIcon, ExpandLeftIcon, MallIcon, MyIcon } from "./icons";
 
 type ProductType = "virtual" | "physical";
 type ProductTag = "新品" | "热门" | "限时";
@@ -31,6 +31,7 @@ type Order = {
   productName: string;
   productType: ProductType;
   points: number;
+  quantity: number;
   createdAt: string;
   status: OrderStatus;
 };
@@ -61,6 +62,30 @@ type StudentPage = "mall" | "orders";
 type AdminPage = "products" | "orders" | "ledger" | "reports";
 
 const STORAGE_KEY = "points-mall-mvp-state";
+const PRODUCTS_PER_PAGE = 20;
+
+function physicalProduct(
+  id: string,
+  name: string,
+  image: string,
+  points: number,
+  stock: number,
+  tag: ProductTag,
+  description: string,
+): Product {
+  return {
+    id,
+    name,
+    image,
+    type: "physical",
+    points,
+    stock,
+    status: "active",
+    tag,
+    description,
+    delivery: "线下领取，请到校区前台出示兑换记录。",
+  };
+}
 
 const initialStore: Store = {
   student: {
@@ -69,120 +94,40 @@ const initialStore: Store = {
     points: 860,
   },
   products: [
-    {
-      id: "p-virtual-1",
-      name: "FCE 写作批改券",
-      image: "券",
-      type: "virtual",
-      points: 120,
-      stock: 999,
-      status: "active",
-      tag: "热门",
-      description: "兑换后获得一次 FCE 写作批改权益，老师会在课后统一安排使用。",
-      delivery: "兑换后自动发放到学生权益记录。",
-    },
-    {
-      id: "p-physical-1",
-      name: "思越定制笔记本",
-      image: "本",
-      type: "physical",
-      points: 180,
-      stock: 8,
-      status: "active",
-      tag: "新品",
-      description: "适合课堂笔记和错题整理，到校后可在前台领取。",
-      delivery: "线下领取，请到校区前台出示兑换记录。",
-    },
-    {
-      id: "p-physical-2",
-      name: "英语阅读训练书",
-      image: "书",
-      type: "physical",
-      points: 320,
-      stock: 2,
-      status: "active",
-      tag: "限时",
-      description: "分级阅读训练材料，适合每周阅读打卡使用。",
-      delivery: "线下领取，请到校区前台出示兑换记录。",
-    },
-    {
-      id: "p-virtual-2",
-      name: "口语陪练 20 分钟",
-      image: "练",
-      type: "virtual",
-      points: 260,
-      stock: 20,
-      status: "active",
-      tag: "热门",
-      description: "兑换后获得一次 20 分钟口语陪练权益。",
-      delivery: "兑换后自动发放，课程顾问后续安排使用时间。",
-    },
-    {
-      id: "p-physical-3",
-      name: "帆布袋",
-      image: "袋",
-      type: "physical",
-      points: 90,
-      stock: 0,
-      status: "active",
-      tag: "新品",
-      description: "校区活动周边，库存为 0 时学生端显示已售罄。",
-      delivery: "线下领取，请到校区前台出示兑换记录。",
-    },
+    physicalProduct("p-stationery-notebook-1", "思悦定制笔记本1", "/product-images/notebook.png", 288, 12, "新品", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-book-magic-tree-house", "神奇树屋", "/product-images/magic-tree-house.png", 988, 5, "热门", "经典章节书，适合课后阅读兑换。"),
+    physicalProduct("p-sticker-meimei", "梅梅贴纸", "/product-images/meimei-sticker.png", 66, 30, "新品", "角色主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-pencil-1", "思悦定制铅笔1", "/product-images/pencil.png", 188, 20, "热门", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-stationery-eraser-1", "思悦定制橡皮1", "/product-images/eraser.png", 88, 24, "新品", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-book-magic-school-bus", "神奇校车", "/product-images/magic-school-bus.png", 988, 4, "热门", "科普阅读书，适合拓展知识面。"),
+    physicalProduct("p-stationery-pencil-box-1", "思悦定制文具盒1", "/product-images/pencil-box.png", 388, 8, "限时", "思悦定制文具盒，可收纳常用学习用品。"),
+    physicalProduct("p-sticker-sixiaodou", "思小豆贴纸", "/product-images/sixiaodou-sticker.png", 66, 30, "热门", "思小豆主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-notebook-2", "思悦定制笔记本2", "/product-images/notebook.png", 288, 10, "热门", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-stationery-pencil-2", "思悦定制铅笔2", "/product-images/pencil.png", 188, 18, "新品", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-book-national-geographic", "国家探索", "/product-images/national-geographic.png", 988, 4, "限时", "探索主题读物，适合课外阅读兑换。"),
+    physicalProduct("p-stationery-eraser-2", "思悦定制橡皮2", "/product-images/eraser.png", 88, 22, "热门", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-stationery-pencil-box-2", "思悦定制文具盒2", "/product-images/pencil-box.png", 388, 7, "新品", "思悦定制文具盒，可收纳常用学习用品。"),
+    physicalProduct("p-sticker-yueyue", "悦悦贴纸", "/product-images/yueyue-sticker.png", 66, 30, "新品", "悦悦主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-notebook-3", "思悦定制笔记本3", "/product-images/notebook.png", 288, 11, "限时", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-book-oxford-potato-pals", "牛津小土豆", "/product-images/oxford-potato-pals.png", 988, 6, "热门", "牛津分级阅读读物，适合英语阅读积累。"),
+    physicalProduct("p-stationery-pencil-3", "思悦定制铅笔3", "/product-images/pencil.png", 188, 19, "限时", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-stationery-eraser-3", "思悦定制橡皮3", "/product-images/eraser.png", 88, 25, "新品", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-sticker-songsong", "松松贴纸", "/product-images/songsong-sticker.png", 66, 28, "热门", "松松主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-notebook-4", "思悦定制笔记本4", "/product-images/notebook.png", 288, 9, "新品", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-book-fly-guy", "苍蝇小子", "/product-images/fly-guy.png", 988, 5, "新品", "趣味桥梁书，适合轻松阅读兑换。"),
+    physicalProduct("p-stationery-pencil-box-3", "思悦定制文具盒3", "/product-images/pencil-box.png", 388, 6, "热门", "思悦定制文具盒，可收纳常用学习用品。"),
+    physicalProduct("p-stationery-pencil-4", "思悦定制铅笔4", "/product-images/pencil.png", 188, 21, "新品", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-stationery-eraser-4", "思悦定制橡皮4", "/product-images/eraser.png", 88, 23, "限时", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-book-charlottes-web", "夏洛的网", "/product-images/charlottes-web.png", 988, 3, "热门", "经典文学读物，适合进阶阅读兑换。"),
+    physicalProduct("p-sticker-meimei-2", "梅梅贴纸2", "/product-images/meimei-sticker.png", 66, 26, "限时", "梅梅主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-notebook-5", "思悦定制笔记本5", "/product-images/notebook.png", 288, 10, "热门", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-stationery-pencil-5", "思悦定制铅笔5", "/product-images/pencil.png", 188, 17, "热门", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-stationery-pencil-box-4", "思悦定制文具盒4", "/product-images/pencil-box.png", 388, 5, "限时", "思悦定制文具盒，可收纳常用学习用品。"),
+    physicalProduct("p-stationery-eraser-5", "思悦定制橡皮5", "/product-images/eraser.png", 88, 20, "热门", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-stationery-notebook-6", "思悦定制笔记本6", "/product-images/notebook.png", 288, 8, "限时", "思悦定制笔记本，适合课堂笔记和错题整理。"),
   ],
-  orders: [
-    {
-      id: "MALL20260714001",
-      studentName: "王小明",
-      phone: "13800000001",
-      productId: "p-physical-1",
-      productName: "思越定制笔记本",
-      productType: "physical",
-      points: 180,
-      createdAt: "2026-07-14 09:30",
-      status: "pending_pickup",
-    },
-    {
-      id: "MALL20260713002",
-      studentName: "王小明",
-      phone: "13800000001",
-      productId: "p-virtual-1",
-      productName: "FCE 写作批改券",
-      productType: "virtual",
-      points: 120,
-      createdAt: "2026-07-13 18:20",
-      status: "completed",
-    },
-  ],
-  ledgers: [
-    {
-      id: "l-1",
-      studentName: "王小明",
-      type: "兑换扣减",
-      change: -180,
-      orderId: "MALL20260714001",
-      createdAt: "2026-07-14 09:30",
-      note: "兑换实物商品，生成待领取订单。",
-    },
-    {
-      id: "l-2",
-      studentName: "王小明",
-      type: "兑换扣减",
-      change: -120,
-      orderId: "MALL20260713002",
-      createdAt: "2026-07-13 18:20",
-      note: "兑换虚拟商品，立即完成。",
-    },
-    {
-      id: "l-3",
-      studentName: "王小明",
-      type: "虚拟发放",
-      change: 0,
-      orderId: "MALL20260713002",
-      createdAt: "2026-07-13 18:20",
-      note: "虚拟权益已自动发放。",
-    },
-  ],
+  orders: [],
+  ledgers: [],
 };
 
 const emptyProduct: Product = {
@@ -238,7 +183,6 @@ export default function PointsMallMvp() {
   const [viewSwitcherOpen, setViewSwitcherOpen] = useState(false);
   const [studentPage, setStudentPage] = useState<StudentPage>("mall");
   const [adminPage, setAdminPage] = useState<AdminPage>("products");
-  const [category, setCategory] = useState<"all" | ProductType>("all");
   const [orderFilter, setOrderFilter] = useState<"all" | OrderStatus>("all");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [confirmProductId, setConfirmProductId] = useState<string | null>(null);
@@ -258,11 +202,9 @@ export default function PointsMallMvp() {
   const activeProducts = useMemo(
     () =>
       store.products.filter(
-        (product) =>
-          product.status === "active" &&
-          (category === "all" || product.type === category),
+        (product) => product.status === "active",
       ),
-    [category, store.products],
+    [store.products],
   );
 
   const selectedProduct = store.products.find((item) => item.id === selectedProductId);
@@ -296,7 +238,7 @@ export default function PointsMallMvp() {
       };
       soldMap.set(order.productId, {
         ...current,
-        count: current.count + 1,
+        count: current.count + (order.quantity ?? 1),
         points: current.points + order.points,
       });
     });
@@ -329,10 +271,12 @@ export default function PointsMallMvp() {
     };
   }
 
-  function exchangeProduct(product: Product) {
+  function exchangeProduct(product: Product, quantity: number) {
+    const safeQuantity = Math.max(1, Math.floor(quantity));
+    const totalPoints = product.points * safeQuantity;
     if (product.status !== "active") return;
-    if (product.stock <= 0) return;
-    if (store.student.points < product.points) return;
+    if (product.stock < safeQuantity) return;
+    if (store.student.points < totalPoints) return;
 
     const order: Order = {
       id: newOrderId(store.orders.length),
@@ -341,7 +285,8 @@ export default function PointsMallMvp() {
       productId: product.id,
       productName: product.name,
       productType: product.type,
-      points: product.points,
+      points: totalPoints,
+      quantity: safeQuantity,
       createdAt: nowText(),
       status: product.type === "virtual" ? "completed" : "pending_pickup",
     };
@@ -350,22 +295,22 @@ export default function PointsMallMvp() {
       ...current,
       student: {
         ...current.student,
-        points: current.student.points - product.points,
+        points: current.student.points - totalPoints,
       },
       products: current.products.map((item) =>
-        item.id === product.id ? { ...item, stock: Math.max(0, item.stock - 1) } : item,
+        item.id === product.id ? { ...item, stock: Math.max(0, item.stock - safeQuantity) } : item,
       ),
       orders: [order, ...current.orders],
       ledgers: [
         addLedger({
           studentName: current.student.name,
           type: "兑换扣减",
-          change: -product.points,
+          change: -totalPoints,
           orderId: order.id,
           note:
             product.type === "virtual"
-              ? "兑换虚拟商品，立即完成。"
-              : "兑换实物商品，生成待领取订单。",
+              ? `兑换虚拟商品 ${safeQuantity} 件，立即完成。`
+              : `兑换实物商品 ${safeQuantity} 件，生成待领取订单。`,
         }),
         ...(product.type === "virtual"
           ? [
@@ -399,7 +344,7 @@ export default function PointsMallMvp() {
           points: current.student.points + order.points,
         },
         products: current.products.map((product) =>
-          product.id === order.productId ? { ...product, stock: product.stock + 1 } : product,
+          product.id === order.productId ? { ...product, stock: product.stock + (order.quantity ?? 1) } : product,
         ),
         orders: current.orders.map((item) =>
           item.id === orderId ? { ...item, status: "cancelled" } : item,
@@ -470,20 +415,26 @@ export default function PointsMallMvp() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">本地最小 MVP</p>
-          <h1>积分商城原型</h1>
-        </div>
-        <div className="topbar-actions">
-          <div className="student-points" data-dev-note="student-points">
-            {store.student.name}：<strong>{store.student.points}</strong> 积分
+    <main className={`app-shell ${viewMode === "student" ? "student-theme" : "admin-theme"}`}>
+      <header className={`topbar ${viewMode === "student" ? "student-topbar" : "admin-topbar"}`}>
+        {viewMode === "admin" && (
+          <div>
+            <p className="eyebrow">本地最小 MVP</p>
+            <h1>积分商城原型</h1>
           </div>
-          <button className="ghost-button" data-dev-note="reset-demo" onClick={resetDemo}>
-            重置演示数据
-          </button>
-        </div>
+        )}
+        {viewMode === "student" && (
+          <nav className="student-page-tabs" aria-label="学生端菜单">
+            <button className={studentPage === "mall" ? "active" : ""} onClick={() => setStudentPage("mall")}>
+              <MallIcon aria-hidden />
+              Mall
+            </button>
+            <button className={studentPage === "orders" ? "active" : ""} onClick={() => setStudentPage("orders")}>
+              <MyIcon aria-hidden />
+              My
+            </button>
+          </nav>
+        )}
       </header>
 
       <ViewModeSwitcher
@@ -491,39 +442,27 @@ export default function PointsMallMvp() {
         value={viewMode}
         onToggle={() => setViewSwitcherOpen((current) => !current)}
         onChange={setViewMode}
+        onReset={resetDemo}
       />
 
-      <section className="workspace">
+      <section className={`workspace ${viewMode === "student" ? "student-workspace" : "admin-workspace"}`}>
         {viewMode === "student" ? (
-          <>
-            <nav className="side-nav" aria-label="学生端菜单">
-              <button className={studentPage === "mall" ? "active" : ""} onClick={() => setStudentPage("mall")}>
-                商城首页
-              </button>
-              <button className={studentPage === "orders" ? "active" : ""} onClick={() => setStudentPage("orders")}>
-                我的兑换
-              </button>
-            </nav>
-            <section className="panel-area">
-              {studentPage === "mall" ? (
+          <section className="panel-area student-panel-area">
+            {studentPage === "mall" ? (
                 <StudentMall
                   products={activeProducts}
-                  category={category}
                   studentPoints={store.student.points}
-                  onCategoryChange={setCategory}
-                  onShowDetail={setSelectedProductId}
                   onConfirm={setConfirmProductId}
                 />
-              ) : (
-                <StudentOrders
-                  orders={store.orders}
-                  filter={orderFilter}
-                  onFilterChange={setOrderFilter}
-                  onCancel={cancelOrder}
-                />
-              )}
-            </section>
-          </>
+            ) : (
+              <StudentOrders
+                orders={store.orders}
+                filter={orderFilter}
+                onFilterChange={setOrderFilter}
+                onCancel={cancelOrder}
+              />
+            )}
+          </section>
         ) : (
           <>
             <nav className="side-nav" aria-label="后台菜单">
@@ -542,7 +481,7 @@ export default function PointsMallMvp() {
                 </button>
               ))}
             </nav>
-            <section className="panel-area">
+            <section className="panel-area admin-panel-area">
               {adminPage === "products" && (
                 <ProductAdmin
                   products={store.products}
@@ -573,8 +512,9 @@ export default function PointsMallMvp() {
       {confirmProduct && (
         <ConfirmExchange
           product={confirmProduct}
+          studentPoints={store.student.points}
           onCancel={() => setConfirmProductId(null)}
-          onSubmit={() => exchangeProduct(confirmProduct)}
+          onSubmit={(quantity) => exchangeProduct(confirmProduct, quantity)}
         />
       )}
 
@@ -603,11 +543,13 @@ function ViewModeSwitcher({
   value,
   onToggle,
   onChange,
+  onReset,
 }: {
   open: boolean;
   value: ViewMode;
   onToggle: () => void;
   onChange: (value: ViewMode) => void;
+  onReset: () => void;
 }) {
   return (
     <aside className={`view-switcher ${open ? "open" : "collapsed"}`} aria-label="视角切换">
@@ -639,6 +581,14 @@ function ViewModeSwitcher({
           >
             后台视角
           </button>
+          <button
+            type="button"
+            className="view-switcher-reset"
+            data-dev-note="reset-demo"
+            onClick={onReset}
+          >
+            重置数据
+          </button>
         </div>
       )}
     </aside>
@@ -647,61 +597,56 @@ function ViewModeSwitcher({
 
 function StudentMall({
   products,
-  category,
   studentPoints,
-  onCategoryChange,
-  onShowDetail,
   onConfirm,
 }: {
   products: Product[];
-  category: "all" | ProductType;
   studentPoints: number;
-  onCategoryChange: (value: "all" | ProductType) => void;
-  onShowDetail: (id: string) => void;
   onConfirm: (id: string) => void;
 }) {
+  const featuredProduct = products[0];
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(products.length / PRODUCTS_PER_PAGE));
+  const pageProducts = products.slice(
+    (currentPage - 1) * PRODUCTS_PER_PAGE,
+    currentPage * PRODUCTS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [products.length]);
+
   return (
-    <div data-dev-note="student-mall-page">
-      <PanelHeader
-        title="学生端商城首页"
-        desc="学生浏览上架商品，按积分和库存状态发起兑换。"
-      />
-      <div className="toolbar">
-        <div className="segmented compact" data-dev-note="product-category-filter">
-          {[
-            ["all", "全部"],
-            ["virtual", "虚拟商品"],
-            ["physical", "实物商品"],
-          ].map(([key, label]) => (
-            <button key={key} className={category === key ? "active" : ""} onClick={() => onCategoryChange(key as "all" | ProductType)}>
-              {label}
-            </button>
-          ))}
+    <div className="student-mall-view" data-dev-note="student-mall-page">
+      <section className="student-hero">
+        <div>
+          <p className="student-kicker">SIYUE POINTS MALL</p>
+          <h2>积分好礼兑换</h2>
+          <p>用课堂积分兑换学习权益和校区周边，库存与积分状态实时校验。</p>
         </div>
-      </div>
-      <div className="product-grid">
-        {products.map((product) => {
+        <div className="student-wallet" data-dev-note="student-points">
+          <span>当前积分</span>
+          <strong>{studentPoints}</strong>
+          {featuredProduct && <small>可兑换 {featuredProduct.name}</small>}
+        </div>
+      </section>
+      <div className="product-grid student-product-grid">
+        {pageProducts.map((product) => {
           const soldOut = product.stock <= 0;
           const notEnough = studentPoints < product.points;
           return (
-            <article className="product-card" data-dev-note="product-card" key={product.id}>
-              <div className="product-image">{product.image}</div>
-              <div className="card-head">
-                <h3>{product.name}</h3>
+            <article className="product-card student-product-card" data-dev-note="product-card" key={product.id}>
+              <div className="student-card-artwork">
+                <ProductArtwork product={product} />
                 <span className="tag">{product.tag}</span>
               </div>
-              <p>{typeText[product.type]} · {product.delivery}</p>
-              <div className="meta-row">
-                <strong>{product.points} 积分</strong>
-                <span data-dev-note="product-stock">库存 {product.stock}</span>
+              <div className="student-card-copy">
+                <h3>{product.name}</h3>
               </div>
-              <div className="status-line">
-                {soldOut ? "已售罄" : notEnough ? "积分不足" : "可兑换"}
+              <div className="student-card-footer">
+                <strong>{product.points}<span>积分</span></strong>
               </div>
               <div className="card-actions">
-                <button className="ghost-button" onClick={() => onShowDetail(product.id)}>
-                  详情
-                </button>
                 <button className="primary-button" data-dev-note="exchange-button" disabled={soldOut || notEnough} onClick={() => onConfirm(product.id)}>
                   立即兑换
                 </button>
@@ -710,6 +655,32 @@ function StudentMall({
           );
         })}
       </div>
+      {products.length > 0 && (
+        <nav className="student-pagination" aria-label="商品分页">
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+            <button
+              key={page}
+              type="button"
+              className={currentPage === page ? "active" : ""}
+              onClick={() => setCurrentPage(page)}
+              aria-current={currentPage === page ? "page" : undefined}
+            >
+              {page}
+            </button>
+          ))}
+          {totalPages > 1 && (
+            <button
+              type="button"
+              aria-label="下一页"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            >
+              <ArrowRightIcon aria-hidden />
+            </button>
+          )}
+        </nav>
+      )}
+      {!products.length && <div className="empty">暂无可兑换商品</div>}
     </div>
   );
 }
@@ -727,8 +698,8 @@ function StudentOrders({
 }) {
   const filteredOrders = orders.filter((order) => filter === "all" || order.status === filter);
   return (
-    <div data-dev-note="student-orders-page">
-      <PanelHeader title="我的兑换 / 订单页" desc="学生查看兑换记录，待领取实物商品可在领取前取消。" />
+    <div className="student-orders-view" data-dev-note="student-orders-page">
+      <PanelHeader title="我的兑换" desc="学生查看兑换记录，待领取实物商品可在领取前取消。" />
       <div className="toolbar">
         <div className="segmented compact" data-dev-note="student-order-filter">
           {[
@@ -744,10 +715,11 @@ function StudentOrders({
         </div>
       </div>
       <DataTable
-        headers={["订单号", "商品", "类型", "积分", "时间", "状态", "操作"]}
+        headers={["订单号", "商品", "数量", "类型", "积分", "时间", "状态", "操作"]}
         rows={filteredOrders.map((order) => [
           order.id,
           order.productName,
+          `x${order.quantity ?? 1}`,
           typeText[order.productType],
           `${order.points}`,
           order.createdAt,
@@ -816,11 +788,12 @@ function AdminOrders({
     <div data-dev-note="admin-orders-page">
       <PanelHeader title="后台订单管理页" desc="虚拟商品兑换后立即完成；实物商品待领取，可确认领取或取消。" />
       <DataTable
-        headers={["订单号", "学生 / 手机号", "商品", "类型", "积分", "下单时间", "状态", "操作"]}
+        headers={["订单号", "学生 / 手机号", "商品", "数量", "类型", "积分", "下单时间", "状态", "操作"]}
         rows={orders.map((order) => [
           order.id,
           `${order.studentName} / ${order.phone}`,
           order.productName,
+          `x${order.quantity ?? 1}`,
           typeText[order.productType],
           `${order.points}`,
           order.createdAt,
@@ -901,7 +874,7 @@ function ProductDetail({
   return (
     <Modal title="学生端商品详情页" onClose={onClose}>
       <div className="detail-layout" data-dev-note="product-detail">
-        <div className="product-image large">{product.image}</div>
+        <ProductArtwork product={product} large />
         <div>
           <h2>{product.name}</h2>
           <p>{product.description}</p>
@@ -920,35 +893,85 @@ function ProductDetail({
   );
 }
 
+function ProductArtwork({ product, large = false }: { product: Product; large?: boolean }) {
+  const imageSrc = product.image.trim();
+  const hasImage = imageSrc.startsWith("/product-images/");
+  return (
+    <div className={`product-image ${large ? "large" : ""}`} aria-label={`${product.name} 商品图`}>
+      {hasImage ? <img src={imageSrc} alt={product.name} /> : <span>商品图占位</span>}
+    </div>
+  );
+}
+
 function ConfirmExchange({
   product,
+  studentPoints,
   onCancel,
   onSubmit,
 }: {
   product: Product;
+  studentPoints: number;
   onCancel: () => void;
-  onSubmit: () => void;
+  onSubmit: (quantity: number) => void;
 }) {
+  const maxByPoints = Math.floor(studentPoints / product.points);
+  const maxQuantity = Math.max(0, Math.min(product.stock, maxByPoints));
+  const [quantity, setQuantity] = useState(maxQuantity > 0 ? 1 : 0);
+  const totalPoints = product.points * quantity;
+  const disabled = quantity < 1 || quantity > maxQuantity;
+
+  function updateQuantity(nextQuantity: number) {
+    setQuantity(Math.max(1, Math.min(maxQuantity, Math.floor(nextQuantity) || 1)));
+  }
+
   return (
     <Modal title="兑换确认" onClose={onCancel}>
-      <div className="confirm-copy" data-dev-note="exchange-confirm">
-        <h2>{product.name}</h2>
-        <p>本次将扣除 {product.points} 积分。</p>
-        {product.type === "virtual" ? (
-          <ul>
-            <li>虚拟权益即时发放。</li>
-            <li>兑换后不支持取消。</li>
-          </ul>
-        ) : (
-          <ul>
-            <li>请到校区前台领取。</li>
-            <li>未领取前可取消并返还积分。</li>
-          </ul>
-        )}
+      <div className="confirm-exchange-layout" data-dev-note="exchange-confirm">
+        <ProductArtwork product={product} large />
+        <div className="confirm-copy">
+          <span className="student-type">{typeText[product.type]}</span>
+          <h2>{product.name}</h2>
+          <p>{product.description}</p>
+          <dl className="detail-list compact">
+            <div><dt>单件积分</dt><dd>{product.points}</dd></div>
+            <div><dt>当前库存</dt><dd>{product.stock}</dd></div>
+            <div><dt>可兑数量</dt><dd>{maxQuantity}</dd></div>
+          </dl>
+          <div className="quantity-picker" aria-label="选择商品数量">
+            <span>兑换数量</span>
+            <div>
+              <button type="button" disabled={quantity <= 1} onClick={() => updateQuantity(quantity - 1)}>
+                -
+              </button>
+              <input
+                type="number"
+                min={1}
+                max={maxQuantity}
+                value={quantity}
+                onChange={(event) => updateQuantity(Number(event.target.value))}
+              />
+              <button type="button" disabled={quantity >= maxQuantity} onClick={() => updateQuantity(quantity + 1)}>
+                +
+              </button>
+            </div>
+          </div>
+          <p className="confirm-total">本次将扣除 <strong>{totalPoints}</strong> 积分。</p>
+          {product.type === "virtual" ? (
+            <ul>
+              <li>虚拟权益即时发放。</li>
+              <li>兑换后不支持取消。</li>
+            </ul>
+          ) : (
+            <ul>
+              <li>请到校区前台领取。</li>
+              <li>未领取前可取消并返还积分。</li>
+            </ul>
+          )}
+        </div>
       </div>
       <div className="modal-actions">
         <button className="ghost-button" onClick={onCancel}>再想想</button>
-        <button className="primary-button" data-dev-note="exchange-confirm" onClick={onSubmit}>确认兑换</button>
+        <button className="primary-button" data-dev-note="exchange-confirm" disabled={disabled} onClick={() => onSubmit(quantity)}>确认兑换</button>
       </div>
     </Modal>
   );
@@ -973,8 +996,12 @@ function ProductEditor({
           <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
         </label>
         <label>
-          图片占位字
-          <input maxLength={2} value={draft.image} onChange={(event) => setDraft({ ...draft, image: event.target.value || "品" })} />
+          商品图路径
+          <input
+            placeholder="/product-images/example.png"
+            value={draft.image}
+            onChange={(event) => setDraft({ ...draft, image: event.target.value || "品" })}
+          />
         </label>
         <label>
           商品类型
