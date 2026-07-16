@@ -354,7 +354,7 @@ button:disabled {
   border-radius: 32px;
   padding: clamp(24px, 4vw, 42px);
   background:
-    url("/hero-bg.png") center / cover no-repeat,
+    var(--student-hero-image) center / cover no-repeat,
     var(--student-purple);
   color: #ffffff;
   box-shadow: 0 24px 60px rgba(47, 29, 115, 0.26);
@@ -912,8 +912,29 @@ tr:last-child td {
   padding: 18px;
 }
 
+.exchange-modal {
+  border-radius: 28px;
+  padding: 22px;
+}
+
 .modal-header {
   margin-bottom: 16px;
+}
+
+.modal-close-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.modal-close-button svg {
+  width: 40px;
+  height: 40px;
+  display: block;
 }
 
 .modal-actions {
@@ -960,6 +981,15 @@ tr:last-child td {
   align-items: start;
 }
 
+.confirm-exchange-layout .product-image.large {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
 .confirm-copy h2 {
   margin: 6px 0 8px;
 }
@@ -969,7 +999,7 @@ tr:last-child td {
   padding-left: 20px;
 }
 
-.quantity-picker {
+.confirm-purchase-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -977,6 +1007,12 @@ tr:last-child td {
   margin-top: 14px;
   padding: 12px;
   background: #f8fafc;
+}
+
+.quantity-picker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .quantity-picker span {
@@ -993,12 +1029,18 @@ tr:last-child td {
 .quantity-picker button {
   width: 34px;
   height: 34px;
-  border: 1px solid var(--line);
-  background: #ffffff;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
   color: var(--foreground);
   padding: 0;
-  font-size: 20px;
-  font-weight: 700;
+}
+
+.quantity-picker button svg {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 .quantity-picker input {
@@ -1009,12 +1051,26 @@ tr:last-child td {
 }
 
 .confirm-total {
-  margin: 14px 0 0;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .confirm-total strong {
   color: var(--primary-dark);
   font-size: 22px;
+}
+
+.text-button {
+  min-height: 34px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.text-button:hover {
+  color: var(--foreground);
 }
 
 .form-grid {
@@ -1333,6 +1389,13 @@ textarea {
     right: 14px;
     top: 56px;
     width: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .confirm-purchase-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

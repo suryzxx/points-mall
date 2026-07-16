@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { DeveloperMode } from "./DeveloperMode";
-import { ArrowRightIcon, CollapseRightIcon, ExpandLeftIcon, MallIcon, MyIcon } from "./icons";
+import {
+  ArrowRightIcon,
+  CloseIcon,
+  CollapseRightIcon,
+  ExpandLeftIcon,
+  MallIcon,
+  MinusCircleIcon,
+  MyIcon,
+  PlusCircleIcon,
+} from "./icons";
 
 type ProductType = "virtual" | "physical";
 type ProductTag = "新品" | "热门" | "限时";
@@ -63,6 +73,11 @@ type AdminPage = "products" | "orders" | "ledger" | "reports";
 
 const STORAGE_KEY = "points-mall-mvp-state";
 const PRODUCTS_PER_PAGE = 20;
+const PUBLIC_ASSET_BASE = import.meta.env.BASE_URL;
+
+function publicAssetPath(path: string) {
+  return `${PUBLIC_ASSET_BASE}${path.replace(/^\/+/, "")}`;
+}
 
 function physicalProduct(
   id: string,
@@ -618,7 +633,10 @@ function StudentMall({
 
   return (
     <div className="student-mall-view" data-dev-note="student-mall-page">
-      <section className="student-hero">
+      <section
+        className="student-hero"
+        style={{ "--student-hero-image": `url(${publicAssetPath("hero-bg.png")})` } as CSSProperties}
+      >
         <div>
           <p className="student-kicker">SIYUE POINTS MALL</p>
           <h2>积分好礼兑换</h2>
@@ -715,12 +733,11 @@ function StudentOrders({
         </div>
       </div>
       <DataTable
-        headers={["订单号", "商品", "数量", "类型", "积分", "时间", "状态", "操作"]}
+        headers={["订单号", "商品", "数量", "积分", "时间", "状态", "操作"]}
         rows={filteredOrders.map((order) => [
           order.id,
           order.productName,
           `x${order.quantity ?? 1}`,
-          typeText[order.productType],
           `${order.points}`,
           order.createdAt,
           statusText[order.status],
@@ -881,7 +898,6 @@ function ProductDetail({
           <dl className="detail-list">
             <div><dt>所需积分</dt><dd>{product.points}</dd></div>
             <div><dt>当前库存</dt><dd data-dev-note="product-stock">{product.stock}</dd></div>
-            <div><dt>商品类型</dt><dd>{typeText[product.type]}</dd></div>
             <div><dt>兑换说明</dt><dd>{product.delivery}</dd></div>
           </dl>
           <button className="primary-button" data-dev-note="exchange-button" disabled={disabled} onClick={onConfirm}>
@@ -895,10 +911,12 @@ function ProductDetail({
 
 function ProductArtwork({ product, large = false }: { product: Product; large?: boolean }) {
   const imageSrc = product.image.trim();
-  const hasImage = imageSrc.startsWith("/product-images/");
+  const normalizedImageSrc = imageSrc.replace(/^\/+/, "");
+  const hasImage = normalizedImageSrc.startsWith("product-images/");
+  const imageUrl = publicAssetPath(normalizedImageSrc);
   return (
     <div className={`product-image ${large ? "large" : ""}`} aria-label={`${product.name} 商品图`}>
-      {hasImage ? <img src={imageSrc} alt={product.name} /> : <span>商品图占位</span>}
+      {hasImage ? <img src={imageUrl} alt={product.name} /> : <span>商品图占位</span>}
     </div>
   );
 }
@@ -925,37 +943,36 @@ function ConfirmExchange({
   }
 
   return (
-    <Modal title="兑换确认" onClose={onCancel}>
+    <Modal title="兑换确认" className="exchange-modal" onClose={onCancel}>
       <div className="confirm-exchange-layout" data-dev-note="exchange-confirm">
         <ProductArtwork product={product} large />
         <div className="confirm-copy">
-          <span className="student-type">{typeText[product.type]}</span>
           <h2>{product.name}</h2>
           <p>{product.description}</p>
           <dl className="detail-list compact">
             <div><dt>单件积分</dt><dd>{product.points}</dd></div>
-            <div><dt>当前库存</dt><dd>{product.stock}</dd></div>
-            <div><dt>可兑数量</dt><dd>{maxQuantity}</dd></div>
           </dl>
-          <div className="quantity-picker" aria-label="选择商品数量">
-            <span>兑换数量</span>
-            <div>
-              <button type="button" disabled={quantity <= 1} onClick={() => updateQuantity(quantity - 1)}>
-                -
-              </button>
-              <input
-                type="number"
-                min={1}
-                max={maxQuantity}
-                value={quantity}
-                onChange={(event) => updateQuantity(Number(event.target.value))}
-              />
-              <button type="button" disabled={quantity >= maxQuantity} onClick={() => updateQuantity(quantity + 1)}>
-                +
-              </button>
+          <div className="confirm-purchase-row">
+            <div className="quantity-picker" aria-label="选择商品数量">
+              <span>兑换数量</span>
+              <div>
+                <button type="button" disabled={quantity <= 1} onClick={() => updateQuantity(quantity - 1)}>
+                  <MinusCircleIcon aria-hidden />
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={maxQuantity}
+                  value={quantity}
+                  onChange={(event) => updateQuantity(Number(event.target.value))}
+                />
+                <button type="button" disabled={quantity >= maxQuantity} onClick={() => updateQuantity(quantity + 1)}>
+                  <PlusCircleIcon aria-hidden />
+                </button>
+              </div>
             </div>
+            <p className="confirm-total">本次将扣除 <strong>{totalPoints}</strong> 积分。</p>
           </div>
-          <p className="confirm-total">本次将扣除 <strong>{totalPoints}</strong> 积分。</p>
           {product.type === "virtual" ? (
             <ul>
               <li>虚拟权益即时发放。</li>
@@ -970,7 +987,7 @@ function ConfirmExchange({
         </div>
       </div>
       <div className="modal-actions">
-        <button className="ghost-button" onClick={onCancel}>再想想</button>
+        <button className="text-button" onClick={onCancel}>再想想</button>
         <button className="primary-button" data-dev-note="exchange-confirm" disabled={disabled} onClick={() => onSubmit(quantity)}>确认兑换</button>
       </div>
     </Modal>
@@ -1116,13 +1133,25 @@ function DataTable({ headers, rows }: { headers: string[]; rows: React.ReactNode
   );
 }
 
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+function Modal({
+  title,
+  children,
+  className,
+  onClose,
+}: {
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+  onClose: () => void;
+}) {
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="modal">
+      <div className={`modal ${className ?? ""}`}>
         <div className="modal-header">
           <h2>{title}</h2>
-          <button className="ghost-button" onClick={onClose} aria-label="关闭">关闭</button>
+          <button className="modal-close-button" onClick={onClose} aria-label="关闭">
+            <CloseIcon aria-hidden />
+          </button>
         </div>
         {children}
       </div>
