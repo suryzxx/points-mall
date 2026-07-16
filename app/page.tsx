@@ -76,7 +76,15 @@ const PRODUCTS_PER_PAGE = 20;
 const PUBLIC_ASSET_BASE = import.meta.env.BASE_URL;
 
 function publicAssetPath(path: string) {
-  return `${PUBLIC_ASSET_BASE}${path.replace(/^\/+/, "")}`;
+  const normalizedPath = path.replace(/^\/+/, "");
+  if (PUBLIC_ASSET_BASE === "./" && typeof window !== "undefined") {
+    const pagePath = window.location.pathname;
+    const basePath = pagePath.endsWith("/")
+      ? pagePath
+      : pagePath.slice(0, pagePath.lastIndexOf("/") + 1);
+    return `${window.location.origin}${basePath}${normalizedPath}`;
+  }
+  return `${PUBLIC_ASSET_BASE}${normalizedPath}`;
 }
 
 function physicalProduct(
