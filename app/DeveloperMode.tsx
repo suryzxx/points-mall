@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { developerNotes, getDeveloperNote } from "./developerNotes";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { getDeveloperNote } from "./developerNotes";
 
 type Marker = {
   id: string;
@@ -8,27 +8,13 @@ type Marker = {
   left: number;
 };
 
-export type DeveloperContext = {
-  view: string;
-  page: string;
-  studentPoints: number;
-  productCount: number;
-  activeProductCount: number;
-  pendingOrderCount: number;
-  completedOrderCount: number;
-  cancelledOrderCount: number;
-};
-
-type DeveloperModeProps = {
-  context: DeveloperContext;
-};
-
 const TOOL_SELECTOR = "[data-dev-tool]";
 
-export function DeveloperMode({ context }: DeveloperModeProps) {
+export function DeveloperMode() {
   const [enabled, setEnabled] = useState(false);
-  const [activeNoteId, setActiveNoteId] = useState<string>("student-mall-page");
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [markers, setMarkers] = useState<Marker[]>([]);
+  const pointerStartedInToolRef = useRef(false);
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -53,6 +39,9 @@ export function DeveloperMode({ context }: DeveloperModeProps) {
   useEffect(() => {
     if (!enabled) return;
 
+    const eventStartedInTool = (event: Event) =>
+      event.composedPath().some((target) => target instanceof Element && target.matches(TOOL_SELECTOR));
+
     const blockPageAction = (event: Event) => {
       if (
         event instanceof KeyboardEvent &&
@@ -62,8 +51,22 @@ export function DeveloperMode({ context }: DeveloperModeProps) {
       ) {
         return;
       }
-      const target = event.target as HTMLElement | null;
-      if (target?.closest(TOOL_SELECTOR)) return;
+      if (
+        event instanceof KeyboardEvent &&
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === "c"
+      ) {
+        return;
+      }
+      if (event.type === "mousedown") {
+        pointerStartedInToolRef.current = eventStartedInTool(event);
+      }
+      if (eventStartedInTool(event)) return;
+      if (event.type === "click" && pointerStartedInToolRef.current) {
+        pointerStartedInToolRef.current = false;
+        return;
+      }
+      setActiveNoteId(null);
       event.preventDefault();
       event.stopPropagation();
     };
@@ -100,14 +103,14 @@ export function DeveloperMode({ context }: DeveloperModeProps) {
           return {
             id,
             title: note.title,
-            top: Math.max(12, rect.top + window.scrollY - 10),
-            left: Math.max(12, rect.left + window.scrollX + rect.width - 12),
+            top: Math.max(12, rect.top - 10),
+            left: Math.max(12, rect.left + rect.width - 12),
           };
         })
         .filter(Boolean) as Marker[];
       setMarkers(nextMarkers);
       setActiveNoteId((current) =>
-        nextMarkers.some((marker) => marker.id === current) ? current : (nextMarkers[0]?.id ?? current),
+        current && nextMarkers.some((marker) => marker.id === current) ? current : null,
       );
     }
 
@@ -122,25 +125,20 @@ export function DeveloperMode({ context }: DeveloperModeProps) {
       window.removeEventListener("resize", collectMarkers);
       observer.disconnect();
     };
-  }, [enabled, context.page, context.view]);
+  }, [enabled]);
 
   const activeNote = useMemo(
-    () => getDeveloperNote(activeNoteId) ?? developerNotes[0],
+    () => (activeNoteId ? getDeveloperNote(activeNoteId) : null),
     [activeNoteId],
   );
+  const activeMarker = markers.find((marker) => marker.id === activeNoteId);
+  const popoverStyle =
+    activeMarker && typeof window !== "undefined"
+      ? getPopoverStyle(activeMarker)
+      : undefined;
 
   return (
     <>
-      <button
-        className={`dev-mode-toggle ${enabled ? "active" : ""}`}
-        data-dev-tool
-        type="button"
-        onClick={() => setEnabled((current) => !current)}
-        title="快捷键：Ctrl/Cmd + Shift + D"
-      >
-        {enabled ? "关闭开发模式" : "开发说明"}
-      </button>
-
       {enabled && (
         <div className="dev-mode-root" data-dev-tool>
           <div className="dev-freeze-banner">
@@ -149,7 +147,7 @@ export function DeveloperMode({ context }: DeveloperModeProps) {
 
           {markers.map((marker, index) => (
             <button
-              className={`dev-marker ${activeNote.id === marker.id ? "active" : ""}`}
+              className={`dev-marker ${activeNote?.id === marker.id ? "active" : ""}`}
               data-dev-tool
               key={marker.id}
               style={{ top: marker.top, left: marker.left }}
@@ -161,59 +159,40 @@ export function DeveloperMode({ context }: DeveloperModeProps) {
             </button>
           ))}
 
-          <aside className="dev-panel" data-dev-tool>
-            <div className="dev-panel-header">
-              <div>
-                <p>当前状态</p>
-                <h2>{context.view} / {context.page}</h2>
-              </div>
-              <button type="button" onClick={() => setEnabled(false)} data-dev-tool>
-                关闭
-              </button>
-            </div>
-
-            <div className="dev-state-grid">
-              <span>学生积分<strong>{context.studentPoints}</strong></span>
-              <span>商品总数<strong>{context.productCount}</strong></span>
-              <span>上架商品<strong>{context.activeProductCount}</strong></span>
-              <span>待领取<strong>{context.pendingOrderCount}</strong></span>
-              <span>已完成<strong>{context.completedOrderCount}</strong></span>
-              <span>已取消<strong>{context.cancelledOrderCount}</strong></span>
-            </div>
-
-            <section className="dev-note-card">
-              <span className="dev-note-category">{activeNote.category}</span>
-              <h3>{activeNote.title}</h3>
-              <p>{activeNote.summary}</p>
-              <RuleList title="前置校验" items={activeNote.checks} />
-              <RuleList title="内部影响" items={activeNote.effects} />
-              <RuleList title="禁止条件" items={activeNote.blockedWhen} />
-              <RuleList title="补充说明" items={activeNote.notes} />
-            </section>
-
-            <section className="dev-note-index">
-              <h3>当前页面说明点</h3>
-              {markers.length ? (
-                markers.map((marker) => (
-                  <button
-                    className={activeNote.id === marker.id ? "active" : ""}
-                    data-dev-tool
-                    key={marker.id}
-                    type="button"
-                    onClick={() => setActiveNoteId(marker.id)}
-                  >
-                    {marker.title}
-                  </button>
-                ))
-              ) : (
-                <p>当前页面暂无说明点。</p>
-              )}
-            </section>
-          </aside>
+          {activeNote && activeMarker && (
+            <aside className="dev-popover" data-dev-tool style={popoverStyle}>
+              <span className="dev-popover-arrow" />
+              <section className="dev-note-card">
+                <span className="dev-note-category">{activeNote.category}</span>
+                <h3>{activeNote.title}</h3>
+                <p>{activeNote.summary}</p>
+                <RuleList title="前置校验" items={activeNote.checks} />
+                <RuleList title="内部影响" items={activeNote.effects} />
+                <RuleList title="禁止条件" items={activeNote.blockedWhen} />
+                <RuleList title="补充说明" items={activeNote.notes} />
+              </section>
+            </aside>
+          )}
         </div>
       )}
     </>
   );
+}
+
+function getPopoverStyle(marker: Marker): CSSProperties {
+  const width = 340;
+  const estimatedHeight = 360;
+  const gap = 18;
+  const left =
+    marker.left + gap + width > window.innerWidth
+      ? Math.max(12, marker.left - width - gap)
+      : marker.left + gap;
+  const top =
+    marker.top + estimatedHeight > window.innerHeight
+      ? Math.max(52, window.innerHeight - estimatedHeight - 12)
+      : Math.max(52, marker.top - 4);
+
+  return { left, top, width };
 }
 
 function RuleList({ title, items }: { title: string; items?: string[] }) {

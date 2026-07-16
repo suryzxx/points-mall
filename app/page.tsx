@@ -15,16 +15,19 @@ import {
 } from "./icons";
 
 type ProductType = "virtual" | "physical";
+type ProductCategory = "daily" | "toy" | "stationery" | "learning";
+type ProductCategoryFilter = "all" | ProductCategory;
 type ProductTag = "新品" | "热门" | "限时";
 type ProductStatus = "active" | "inactive";
 type OrderStatus = "pending_pickup" | "completed" | "cancelled";
-type LedgerType = "兑换扣减" | "取消返还" | "后台调整" | "虚拟发放";
+type LedgerType = "兑换扣减" | "取消返还" | "后台调整" | "虚拟发放" | "课后任务" | "考勤奖励" | "课堂奖励";
 
 type Product = {
   id: string;
   name: string;
   image: string;
   type: ProductType;
+  category: ProductCategory;
   points: number;
   stock: number;
   status: ProductStatus;
@@ -69,11 +72,23 @@ type Store = {
 
 type ViewMode = "student" | "admin";
 type StudentPage = "mall" | "orders";
-type AdminPage = "products" | "orders" | "ledger" | "reports";
+type AdminPage = "products" | "verify" | "orders" | "ledger";
 
 const STORAGE_KEY = "points-mall-mvp-state";
 const PRODUCTS_PER_PAGE = 20;
+const ORDERS_PER_PAGE = 8;
 const PUBLIC_ASSET_BASE = import.meta.env.BASE_URL;
+const productCategoryText: Record<ProductCategory, string> = {
+  daily: "生活用品",
+  toy: "玩具",
+  stationery: "文具",
+  learning: "学习资料",
+};
+const productCategoryOptions = Object.entries(productCategoryText) as [ProductCategory, string][];
+const productCategoryFilterOptions: [ProductCategoryFilter, string][] = [
+  ["all", "全部"],
+  ...productCategoryOptions,
+];
 
 function publicAssetPath(path: string) {
   const normalizedPath = path.replace(/^\/+/, "");
@@ -91,6 +106,7 @@ function physicalProduct(
   id: string,
   name: string,
   image: string,
+  category: ProductCategory,
   points: number,
   stock: number,
   tag: ProductTag,
@@ -101,6 +117,7 @@ function physicalProduct(
     name,
     image,
     type: "physical",
+    category,
     points,
     stock,
     status: "active",
@@ -117,40 +134,192 @@ const initialStore: Store = {
     points: 860,
   },
   products: [
-    physicalProduct("p-stationery-notebook-1", "思悦定制笔记本1", "/product-images/notebook.png", 288, 12, "新品", "思悦定制笔记本，适合课堂笔记和错题整理。"),
-    physicalProduct("p-book-magic-tree-house", "神奇树屋", "/product-images/magic-tree-house.png", 988, 5, "热门", "经典章节书，适合课后阅读兑换。"),
-    physicalProduct("p-sticker-meimei", "梅梅贴纸", "/product-images/meimei-sticker.png", 66, 30, "新品", "角色主题贴纸，可用于手账和作业奖励。"),
-    physicalProduct("p-stationery-pencil-1", "思悦定制铅笔1", "/product-images/pencil.png", 188, 20, "热门", "思悦定制铅笔，适合日常书写练习。"),
-    physicalProduct("p-stationery-eraser-1", "思悦定制橡皮1", "/product-images/eraser.png", 88, 24, "新品", "思悦定制橡皮，适合课堂和作业订正。"),
-    physicalProduct("p-book-magic-school-bus", "神奇校车", "/product-images/magic-school-bus.png", 988, 4, "热门", "科普阅读书，适合拓展知识面。"),
-    physicalProduct("p-stationery-pencil-box-1", "思悦定制文具盒1", "/product-images/pencil-box.png", 388, 8, "限时", "思悦定制文具盒，可收纳常用学习用品。"),
-    physicalProduct("p-sticker-sixiaodou", "思小豆贴纸", "/product-images/sixiaodou-sticker.png", 66, 30, "热门", "思小豆主题贴纸，可用于手账和作业奖励。"),
-    physicalProduct("p-stationery-notebook-2", "思悦定制笔记本2", "/product-images/notebook.png", 288, 10, "热门", "思悦定制笔记本，适合课堂笔记和错题整理。"),
-    physicalProduct("p-stationery-pencil-2", "思悦定制铅笔2", "/product-images/pencil.png", 188, 18, "新品", "思悦定制铅笔，适合日常书写练习。"),
-    physicalProduct("p-book-national-geographic", "国家探索", "/product-images/national-geographic.png", 988, 4, "限时", "探索主题读物，适合课外阅读兑换。"),
-    physicalProduct("p-stationery-eraser-2", "思悦定制橡皮2", "/product-images/eraser.png", 88, 22, "热门", "思悦定制橡皮，适合课堂和作业订正。"),
-    physicalProduct("p-stationery-pencil-box-2", "思悦定制文具盒2", "/product-images/pencil-box.png", 388, 7, "新品", "思悦定制文具盒，可收纳常用学习用品。"),
-    physicalProduct("p-sticker-yueyue", "悦悦贴纸", "/product-images/yueyue-sticker.png", 66, 30, "新品", "悦悦主题贴纸，可用于手账和作业奖励。"),
-    physicalProduct("p-stationery-notebook-3", "思悦定制笔记本3", "/product-images/notebook.png", 288, 11, "限时", "思悦定制笔记本，适合课堂笔记和错题整理。"),
-    physicalProduct("p-book-oxford-potato-pals", "牛津小土豆", "/product-images/oxford-potato-pals.png", 988, 6, "热门", "牛津分级阅读读物，适合英语阅读积累。"),
-    physicalProduct("p-stationery-pencil-3", "思悦定制铅笔3", "/product-images/pencil.png", 188, 19, "限时", "思悦定制铅笔，适合日常书写练习。"),
-    physicalProduct("p-stationery-eraser-3", "思悦定制橡皮3", "/product-images/eraser.png", 88, 25, "新品", "思悦定制橡皮，适合课堂和作业订正。"),
-    physicalProduct("p-sticker-songsong", "松松贴纸", "/product-images/songsong-sticker.png", 66, 28, "热门", "松松主题贴纸，可用于手账和作业奖励。"),
-    physicalProduct("p-stationery-notebook-4", "思悦定制笔记本4", "/product-images/notebook.png", 288, 9, "新品", "思悦定制笔记本，适合课堂笔记和错题整理。"),
-    physicalProduct("p-book-fly-guy", "苍蝇小子", "/product-images/fly-guy.png", 988, 5, "新品", "趣味桥梁书，适合轻松阅读兑换。"),
-    physicalProduct("p-stationery-pencil-box-3", "思悦定制文具盒3", "/product-images/pencil-box.png", 388, 6, "热门", "思悦定制文具盒，可收纳常用学习用品。"),
-    physicalProduct("p-stationery-pencil-4", "思悦定制铅笔4", "/product-images/pencil.png", 188, 21, "新品", "思悦定制铅笔，适合日常书写练习。"),
-    physicalProduct("p-stationery-eraser-4", "思悦定制橡皮4", "/product-images/eraser.png", 88, 23, "限时", "思悦定制橡皮，适合课堂和作业订正。"),
-    physicalProduct("p-book-charlottes-web", "夏洛的网", "/product-images/charlottes-web.png", 988, 3, "热门", "经典文学读物，适合进阶阅读兑换。"),
-    physicalProduct("p-sticker-meimei-2", "梅梅贴纸2", "/product-images/meimei-sticker.png", 66, 26, "限时", "梅梅主题贴纸，可用于手账和作业奖励。"),
-    physicalProduct("p-stationery-notebook-5", "思悦定制笔记本5", "/product-images/notebook.png", 288, 10, "热门", "思悦定制笔记本，适合课堂笔记和错题整理。"),
-    physicalProduct("p-stationery-pencil-5", "思悦定制铅笔5", "/product-images/pencil.png", 188, 17, "热门", "思悦定制铅笔，适合日常书写练习。"),
-    physicalProduct("p-stationery-pencil-box-4", "思悦定制文具盒4", "/product-images/pencil-box.png", 388, 5, "限时", "思悦定制文具盒，可收纳常用学习用品。"),
-    physicalProduct("p-stationery-eraser-5", "思悦定制橡皮5", "/product-images/eraser.png", 88, 20, "热门", "思悦定制橡皮，适合课堂和作业订正。"),
-    physicalProduct("p-stationery-notebook-6", "思悦定制笔记本6", "/product-images/notebook.png", 288, 8, "限时", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-stationery-notebook-1", "思悦定制笔记本1", "/product-images/notebook.png", "stationery", 288, 12, "新品", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-book-magic-tree-house", "神奇树屋", "/product-images/magic-tree-house.png", "learning", 988, 5, "热门", "经典章节书，适合课后阅读兑换。"),
+    physicalProduct("p-sticker-meimei", "梅梅贴纸", "/product-images/meimei-sticker.png", "toy", 66, 28, "新品", "角色主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-pencil-1", "思悦定制铅笔1", "/product-images/pencil.png", "stationery", 188, 20, "热门", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-stationery-eraser-1", "思悦定制橡皮1", "/product-images/eraser.png", "stationery", 88, 23, "新品", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-book-magic-school-bus", "神奇校车", "/product-images/magic-school-bus.png", "learning", 988, 4, "热门", "科普阅读书，适合拓展知识面。"),
+    physicalProduct("p-stationery-pencil-box-1", "思悦定制文具盒1", "/product-images/pencil-box.png", "stationery", 388, 8, "限时", "思悦定制文具盒，可收纳常用学习用品。"),
+    physicalProduct("p-sticker-sixiaodou", "思小豆贴纸", "/product-images/sixiaodou-sticker.png", "toy", 66, 29, "热门", "思小豆主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-notebook-2", "思悦定制笔记本2", "/product-images/notebook.png", "stationery", 288, 10, "热门", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-stationery-pencil-2", "思悦定制铅笔2", "/product-images/pencil.png", "stationery", 188, 16, "新品", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-book-national-geographic", "国家探索", "/product-images/national-geographic.png", "learning", 988, 4, "限时", "探索主题读物，适合课外阅读兑换。"),
+    physicalProduct("p-stationery-eraser-2", "思悦定制橡皮2", "/product-images/eraser.png", "stationery", 88, 22, "热门", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-stationery-pencil-box-2", "思悦定制文具盒2", "/product-images/pencil-box.png", "stationery", 388, 6, "新品", "思悦定制文具盒，可收纳常用学习用品。"),
+    physicalProduct("p-sticker-yueyue", "悦悦贴纸", "/product-images/yueyue-sticker.png", "toy", 66, 30, "新品", "悦悦主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-notebook-3", "思悦定制笔记本3", "/product-images/notebook.png", "stationery", 288, 11, "限时", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-book-oxford-potato-pals", "牛津小土豆", "/product-images/oxford-potato-pals.png", "learning", 988, 6, "热门", "牛津分级阅读读物，适合英语阅读积累。"),
+    physicalProduct("p-stationery-pencil-3", "思悦定制铅笔3", "/product-images/pencil.png", "stationery", 188, 19, "限时", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-stationery-eraser-3", "思悦定制橡皮3", "/product-images/eraser.png", "stationery", 88, 25, "新品", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-sticker-songsong", "松松贴纸", "/product-images/songsong-sticker.png", "toy", 66, 28, "热门", "松松主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-notebook-4", "思悦定制笔记本4", "/product-images/notebook.png", "stationery", 288, 9, "新品", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-book-fly-guy", "苍蝇小子", "/product-images/fly-guy.png", "learning", 988, 5, "新品", "趣味桥梁书，适合轻松阅读兑换。"),
+    physicalProduct("p-stationery-pencil-box-3", "思悦定制文具盒3", "/product-images/pencil-box.png", "stationery", 388, 6, "热门", "思悦定制文具盒，可收纳常用学习用品。"),
+    physicalProduct("p-stationery-pencil-4", "思悦定制铅笔4", "/product-images/pencil.png", "stationery", 188, 21, "新品", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-stationery-eraser-4", "思悦定制橡皮4", "/product-images/eraser.png", "stationery", 88, 23, "限时", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-book-charlottes-web", "夏洛的网", "/product-images/charlottes-web.png", "learning", 988, 3, "热门", "经典文学读物，适合进阶阅读兑换。"),
+    physicalProduct("p-sticker-meimei-2", "梅梅贴纸2", "/product-images/meimei-sticker.png", "toy", 66, 26, "限时", "梅梅主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-stationery-notebook-5", "思悦定制笔记本5", "/product-images/notebook.png", "stationery", 288, 10, "热门", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-stationery-pencil-5", "思悦定制铅笔5", "/product-images/pencil.png", "stationery", 188, 17, "热门", "思悦定制铅笔，适合日常书写练习。"),
+    physicalProduct("p-stationery-pencil-box-4", "思悦定制文具盒4", "/product-images/pencil-box.png", "stationery", 388, 5, "限时", "思悦定制文具盒，可收纳常用学习用品。"),
+    physicalProduct("p-stationery-eraser-5", "思悦定制橡皮5", "/product-images/eraser.png", "stationery", 88, 20, "热门", "思悦定制橡皮，适合课堂和作业订正。"),
+    physicalProduct("p-stationery-notebook-6", "思悦定制笔记本6", "/product-images/notebook.png", "stationery", 288, 8, "限时", "思悦定制笔记本，适合课堂笔记和错题整理。"),
   ],
-  orders: [],
-  ledgers: [],
+  orders: [
+    {
+      id: "MALL20260715001",
+      studentName: "王小明",
+      phone: "13800000001",
+      productId: "p-sticker-meimei",
+      productName: "梅梅贴纸",
+      productType: "physical",
+      points: 132,
+      quantity: 2,
+      createdAt: "2026-07-15 10:12",
+      status: "completed",
+    },
+    {
+      id: "MALL20260714002",
+      studentName: "王小明",
+      phone: "13800000001",
+      productId: "p-stationery-pencil-2",
+      productName: "思悦定制铅笔2",
+      productType: "physical",
+      points: 376,
+      quantity: 2,
+      createdAt: "2026-07-14 17:45",
+      status: "pending_pickup",
+    },
+    {
+      id: "MALL20260713003",
+      studentName: "王小明",
+      phone: "13800000001",
+      productId: "p-stationery-eraser-1",
+      productName: "思悦定制橡皮1",
+      productType: "physical",
+      points: 88,
+      quantity: 1,
+      createdAt: "2026-07-13 16:20",
+      status: "completed",
+    },
+    {
+      id: "MALL20260712004",
+      studentName: "王小明",
+      phone: "13800000001",
+      productId: "p-stationery-pencil-box-2",
+      productName: "思悦定制文具盒2",
+      productType: "physical",
+      points: 388,
+      quantity: 1,
+      createdAt: "2026-07-12 11:08",
+      status: "pending_pickup",
+    },
+    {
+      id: "MALL20260711005",
+      studentName: "王小明",
+      phone: "13800000001",
+      productId: "p-sticker-sixiaodou",
+      productName: "思小豆贴纸",
+      productType: "physical",
+      points: 66,
+      quantity: 1,
+      createdAt: "2026-07-11 19:30",
+      status: "cancelled",
+    },
+  ],
+  ledgers: [
+    {
+      id: "l-demo-reward-1",
+      studentName: "王小明",
+      type: "课后任务",
+      change: 20,
+      orderId: "-",
+      createdAt: "2026-07-16 18:20",
+      note: "完成课后任务，奖励 20 积分。",
+    },
+    {
+      id: "l-demo-reward-2",
+      studentName: "王小明",
+      type: "考勤奖励",
+      change: 20,
+      orderId: "-",
+      createdAt: "2026-07-16 13:55",
+      note: "按时到课，奖励 20 积分。",
+    },
+    {
+      id: "l-demo-reward-3",
+      studentName: "王小明",
+      type: "课堂奖励",
+      change: 35,
+      orderId: "-",
+      createdAt: "2026-07-15 19:05",
+      note: "课堂表现优秀，奖励 35 积分。",
+    },
+    {
+      id: "l-demo-reward-4",
+      studentName: "王小明",
+      type: "课堂奖励",
+      change: 30,
+      orderId: "-",
+      createdAt: "2026-07-14 19:10",
+      note: "课堂互动积极，奖励 30 积分。",
+    },
+    {
+      id: "l-demo-1",
+      studentName: "王小明",
+      type: "兑换扣减",
+      change: -132,
+      orderId: "MALL20260715001",
+      createdAt: "2026-07-15 10:12",
+      note: "兑换实物商品 2 件，已领取完成。",
+    },
+    {
+      id: "l-demo-2",
+      studentName: "王小明",
+      type: "兑换扣减",
+      change: -376,
+      orderId: "MALL20260714002",
+      createdAt: "2026-07-14 17:45",
+      note: "兑换实物商品 2 件，生成待领取订单。",
+    },
+    {
+      id: "l-demo-3",
+      studentName: "王小明",
+      type: "兑换扣减",
+      change: -88,
+      orderId: "MALL20260713003",
+      createdAt: "2026-07-13 16:20",
+      note: "兑换实物商品 1 件，已领取完成。",
+    },
+    {
+      id: "l-demo-4",
+      studentName: "王小明",
+      type: "兑换扣减",
+      change: -388,
+      orderId: "MALL20260712004",
+      createdAt: "2026-07-12 11:08",
+      note: "兑换实物商品 1 件，生成待领取订单。",
+    },
+    {
+      id: "l-demo-5",
+      studentName: "王小明",
+      type: "兑换扣减",
+      change: -66,
+      orderId: "MALL20260711005",
+      createdAt: "2026-07-11 19:30",
+      note: "兑换实物商品 1 件，生成待领取订单。",
+    },
+    {
+      id: "l-demo-6",
+      studentName: "王小明",
+      type: "取消返还",
+      change: 66,
+      orderId: "MALL20260711005",
+      createdAt: "2026-07-11 19:45",
+      note: "学生取消兑换，积分返还，库存释放。",
+    },
+  ],
 };
 
 const emptyProduct: Product = {
@@ -158,6 +327,7 @@ const emptyProduct: Product = {
   name: "",
   image: "品",
   type: "physical",
+  category: "stationery",
   points: 100,
   stock: 10,
   status: "active",
@@ -172,11 +342,6 @@ const statusText: Record<OrderStatus, string> = {
   cancelled: "已取消",
 };
 
-const typeText: Record<ProductType, string> = {
-  virtual: "虚拟商品",
-  physical: "实物商品",
-};
-
 function nowText() {
   const date = new Date();
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -188,12 +353,37 @@ function newOrderId(orderCount: number) {
   return `MALL${day}${String(orderCount + 1).padStart(3, "0")}`;
 }
 
+function inferProductCategory(product: Pick<Product, "id" | "name">): ProductCategory {
+  const value = `${product.id} ${product.name}`;
+  if (/贴纸/.test(value)) return "toy";
+  if (/书|树屋|校车|探索|小土豆|苍蝇|夏洛/.test(value)) return "learning";
+  if (/本|铅笔|橡皮|文具盒/.test(value)) return "stationery";
+  return "daily";
+}
+
+function normalizeStore(store: Store): Store {
+  return {
+    ...store,
+    products: store.products.map((product) => ({
+      ...product,
+      type: "physical",
+      category: product.category ?? inferProductCategory(product),
+      delivery: product.delivery || "线下领取，请到校区前台出示兑换记录。",
+    })),
+    orders: store.orders.map((order) => ({
+      ...order,
+      productType: "physical",
+      quantity: order.quantity ?? 1,
+    })),
+  };
+}
+
 function readStore(): Store {
   if (typeof window === "undefined") return initialStore;
   const cached = window.localStorage.getItem(STORAGE_KEY);
   if (!cached) return initialStore;
   try {
-    return JSON.parse(cached) as Store;
+    return normalizeStore(JSON.parse(cached) as Store);
   } catch {
     return initialStore;
   }
@@ -206,6 +396,7 @@ export default function PointsMallMvp() {
   const [viewSwitcherOpen, setViewSwitcherOpen] = useState(false);
   const [studentPage, setStudentPage] = useState<StudentPage>("mall");
   const [adminPage, setAdminPage] = useState<AdminPage>("products");
+  const [productCategory, setProductCategory] = useState<ProductCategoryFilter>("all");
   const [orderFilter, setOrderFilter] = useState<"all" | OrderStatus>("all");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [confirmProductId, setConfirmProductId] = useState<string | null>(null);
@@ -225,66 +416,15 @@ export default function PointsMallMvp() {
   const activeProducts = useMemo(
     () =>
       store.products.filter(
-        (product) => product.status === "active",
+        (product) =>
+          product.status === "active" &&
+          (productCategory === "all" || product.category === productCategory),
       ),
-    [store.products],
+    [productCategory, store.products],
   );
 
   const selectedProduct = store.products.find((item) => item.id === selectedProductId);
   const confirmProduct = store.products.find((item) => item.id === confirmProductId);
-  const currentPageLabel =
-    viewMode === "student"
-      ? studentPage === "mall"
-        ? "商城首页"
-        : "我的兑换"
-      : {
-          products: "商品管理",
-          orders: "订单管理",
-          ledger: "积分流水",
-          reports: "数据报表",
-        }[adminPage];
-
-  const stats = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const month = new Date().toISOString().slice(0, 7);
-    const todayOrders = store.orders.filter((order) => order.createdAt.startsWith(today));
-    const monthLedgers = store.ledgers.filter(
-      (ledger) => ledger.createdAt.startsWith(month) && ledger.change < 0,
-    );
-    const soldMap = new Map<string, { name: string; count: number; points: number }>();
-    store.orders.forEach((order) => {
-      if (order.status === "cancelled") return;
-      const current = soldMap.get(order.productId) ?? {
-        name: order.productName,
-        count: 0,
-        points: 0,
-      };
-      soldMap.set(order.productId, {
-        ...current,
-        count: current.count + (order.quantity ?? 1),
-        points: current.points + order.points,
-      });
-    });
-
-    return {
-      todayOrderCount: todayOrders.length,
-      monthPoints: Math.abs(monthLedgers.reduce((sum, item) => sum + item.change, 0)),
-      pendingCount: store.orders.filter((order) => order.status === "pending_pickup").length,
-      stockWarningCount: store.products.filter(
-        (product) => product.type === "physical" && product.status === "active" && product.stock <= 3,
-      ).length,
-      topProducts: [...soldMap.values()].sort((a, b) => b.count - a.count).slice(0, 5),
-      productTypes: {
-        virtual: store.products.filter((product) => product.type === "virtual").length,
-        physical: store.products.filter((product) => product.type === "physical").length,
-      },
-      orderStatus: {
-        pending_pickup: store.orders.filter((order) => order.status === "pending_pickup").length,
-        completed: store.orders.filter((order) => order.status === "completed").length,
-        cancelled: store.orders.filter((order) => order.status === "cancelled").length,
-      },
-    };
-  }, [store]);
 
   function addLedger(entry: Omit<Ledger, "id" | "createdAt">): Ledger {
     return {
@@ -307,11 +447,11 @@ export default function PointsMallMvp() {
       phone: store.student.phone,
       productId: product.id,
       productName: product.name,
-      productType: product.type,
+      productType: "physical",
       points: totalPoints,
       quantity: safeQuantity,
       createdAt: nowText(),
-      status: product.type === "virtual" ? "completed" : "pending_pickup",
+      status: "pending_pickup",
     };
 
     setStore((current) => ({
@@ -330,22 +470,8 @@ export default function PointsMallMvp() {
           type: "兑换扣减",
           change: -totalPoints,
           orderId: order.id,
-          note:
-            product.type === "virtual"
-              ? `兑换虚拟商品 ${safeQuantity} 件，立即完成。`
-              : `兑换实物商品 ${safeQuantity} 件，生成待领取订单。`,
+          note: `兑换商品 ${safeQuantity} 件，生成待领取订单。`,
         }),
-        ...(product.type === "virtual"
-          ? [
-              addLedger({
-                studentName: current.student.name,
-                type: "虚拟发放",
-                change: 0,
-                orderId: order.id,
-                note: "虚拟权益已自动发放。",
-              }),
-            ]
-          : []),
         ...current.ledgers,
       ],
     }));
@@ -402,10 +528,8 @@ export default function PointsMallMvp() {
       const nextProduct = {
         ...product,
         id: product.id || `p-${Date.now()}`,
-        delivery:
-          product.type === "virtual"
-            ? "兑换后自动发放到学生权益记录。"
-            : "线下领取，请到校区前台出示兑换记录。",
+        type: "physical" as ProductType,
+        delivery: "线下领取，请到校区前台出示兑换记录。",
       };
       const exists = current.products.some((item) => item.id === nextProduct.id);
       return {
@@ -447,16 +571,23 @@ export default function PointsMallMvp() {
           </div>
         )}
         {viewMode === "student" && (
-          <nav className="student-page-tabs" aria-label="学生端菜单">
-            <button className={studentPage === "mall" ? "active" : ""} onClick={() => setStudentPage("mall")}>
-              <MallIcon aria-hidden />
-              Mall
-            </button>
-            <button className={studentPage === "orders" ? "active" : ""} onClick={() => setStudentPage("orders")}>
-              <MyIcon aria-hidden />
-              My
-            </button>
-          </nav>
+          <>
+            <div className="student-header-spacer" aria-hidden="true" />
+            <nav className="student-page-tabs" aria-label="学生端菜单">
+              <button className={studentPage === "mall" ? "active" : ""} onClick={() => setStudentPage("mall")}>
+                <MallIcon aria-hidden />
+                Mall
+              </button>
+              <button className={studentPage === "orders" ? "active" : ""} onClick={() => setStudentPage("orders")}>
+                <MyIcon aria-hidden />
+                My
+              </button>
+            </nav>
+            <div className="student-header-points" data-dev-note="student-points">
+              <strong>{store.student.points}</strong>
+              <span>积分</span>
+            </div>
+          </>
         )}
       </header>
 
@@ -474,12 +605,15 @@ export default function PointsMallMvp() {
             {studentPage === "mall" ? (
                 <StudentMall
                   products={activeProducts}
+                  category={productCategory}
                   studentPoints={store.student.points}
+                  onCategoryChange={setProductCategory}
                   onConfirm={setConfirmProductId}
                 />
             ) : (
               <StudentOrders
                 orders={store.orders}
+                products={store.products}
                 filter={orderFilter}
                 onFilterChange={setOrderFilter}
                 onCancel={cancelOrder}
@@ -491,9 +625,9 @@ export default function PointsMallMvp() {
             <nav className="side-nav" aria-label="后台菜单">
               {[
                 ["products", "商品管理"],
+                ["verify", "兑换核实"],
                 ["orders", "订单管理"],
                 ["ledger", "积分流水"],
-                ["reports", "数据报表"],
               ].map(([key, label]) => (
                 <button
                   key={key}
@@ -513,11 +647,18 @@ export default function PointsMallMvp() {
                   onToggle={toggleProductStatus}
                 />
               )}
+              {adminPage === "verify" && (
+                <OrderVerification
+                  orders={store.orders}
+                  products={store.products}
+                  onComplete={completeOrder}
+                  onCancel={cancelOrder}
+                />
+              )}
               {adminPage === "orders" && (
                 <AdminOrders orders={store.orders} onComplete={completeOrder} onCancel={cancelOrder} />
               )}
               {adminPage === "ledger" && <LedgerTable ledgers={store.ledgers} />}
-              {adminPage === "reports" && <Reports stats={stats} />}
             </section>
           </>
         )}
@@ -545,18 +686,7 @@ export default function PointsMallMvp() {
         <ProductEditor product={editingProduct} onCancel={() => setEditingProduct(null)} onSave={saveProduct} />
       )}
 
-      <DeveloperMode
-        context={{
-          view: viewMode === "student" ? "学生端" : "后台端",
-          page: currentPageLabel,
-          studentPoints: store.student.points,
-          productCount: store.products.length,
-          activeProductCount: store.products.filter((product) => product.status === "active").length,
-          pendingOrderCount: store.orders.filter((order) => order.status === "pending_pickup").length,
-          completedOrderCount: store.orders.filter((order) => order.status === "completed").length,
-          cancelledOrderCount: store.orders.filter((order) => order.status === "cancelled").length,
-        }}
-      />
+      <DeveloperMode />
     </main>
   );
 }
@@ -578,7 +708,6 @@ function ViewModeSwitcher({
     <aside className={`view-switcher ${open ? "open" : "collapsed"}`} aria-label="视角切换">
       <button
         className="view-switcher-toggle"
-        data-dev-note="view-switch"
         type="button"
         onClick={onToggle}
         aria-expanded={open}
@@ -591,7 +720,6 @@ function ViewModeSwitcher({
           <button
             type="button"
             className={value === "student" ? "active" : ""}
-            data-dev-note="view-switch"
             onClick={() => onChange("student")}
           >
             学生视角
@@ -599,7 +727,6 @@ function ViewModeSwitcher({
           <button
             type="button"
             className={value === "admin" ? "active" : ""}
-            data-dev-note="view-switch"
             onClick={() => onChange("admin")}
           >
             后台视角
@@ -607,7 +734,6 @@ function ViewModeSwitcher({
           <button
             type="button"
             className="view-switcher-reset"
-            data-dev-note="reset-demo"
             onClick={onReset}
           >
             重置数据
@@ -620,14 +746,17 @@ function ViewModeSwitcher({
 
 function StudentMall({
   products,
+  category,
   studentPoints,
+  onCategoryChange,
   onConfirm,
 }: {
   products: Product[];
+  category: ProductCategoryFilter;
   studentPoints: number;
+  onCategoryChange: (value: ProductCategoryFilter) => void;
   onConfirm: (id: string) => void;
 }) {
-  const featuredProduct = products[0];
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(products.length / PRODUCTS_PER_PAGE));
   const pageProducts = products.slice(
@@ -637,7 +766,7 @@ function StudentMall({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [products.length]);
+  }, [category, products.length]);
 
   return (
     <div className="student-mall-view" data-dev-note="student-mall-page">
@@ -650,12 +779,19 @@ function StudentMall({
           <h2>积分好礼兑换</h2>
           <p>用课堂积分兑换学习权益和校区周边，库存与积分状态实时校验。</p>
         </div>
-        <div className="student-wallet" data-dev-note="student-points">
-          <span>当前积分</span>
-          <strong>{studentPoints}</strong>
-          {featuredProduct && <small>可兑换 {featuredProduct.name}</small>}
-        </div>
       </section>
+      <div className="student-category-tabs" data-dev-note="product-category-filter">
+        {productCategoryFilterOptions.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            className={category === key ? "active" : ""}
+            onClick={() => onCategoryChange(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="product-grid student-product-grid">
         {pageProducts.map((product) => {
           const soldOut = product.stock <= 0;
@@ -713,19 +849,36 @@ function StudentMall({
 
 function StudentOrders({
   orders,
+  products,
   filter,
   onFilterChange,
   onCancel,
 }: {
   orders: Order[];
+  products: Product[];
   filter: "all" | OrderStatus;
   onFilterChange: (value: "all" | OrderStatus) => void;
   onCancel: (id: string) => void;
 }) {
+  const productMap = useMemo(
+    () => new Map(products.map((product) => [product.id, product])),
+    [products],
+  );
   const filteredOrders = orders.filter((order) => filter === "all" || order.status === filter);
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PER_PAGE));
+  const pageOrders = filteredOrders.slice(
+    (currentPage - 1) * ORDERS_PER_PAGE,
+    currentPage * ORDERS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, orders.length]);
+
   return (
     <div className="student-orders-view" data-dev-note="student-orders-page">
-      <PanelHeader title="我的兑换" desc="学生查看兑换记录，待领取实物商品可在领取前取消。" />
+      <PanelHeader title="我的兑换" />
       <div className="toolbar">
         <div className="segmented compact" data-dev-note="student-order-filter">
           {[
@@ -741,25 +894,56 @@ function StudentOrders({
         </div>
       </div>
       <DataTable
-        headers={["订单号", "商品", "数量", "积分", "时间", "状态", "操作"]}
-        rows={filteredOrders.map((order) => [
-          order.id,
-          order.productName,
-          `x${order.quantity ?? 1}`,
-          `${order.points}`,
-          order.createdAt,
-          statusText[order.status],
-          order.status === "pending_pickup" && order.productType === "physical" ? (
-            <button className="danger-button" data-dev-note="cancel-order" onClick={() => onCancel(order.id)}>
-              取消兑换
-            </button>
-          ) : order.productType === "virtual" ? (
-            "查看兑换结果"
-          ) : (
-            "只读"
-          ),
-        ])}
+        headers={["订单号", "商品图", "商品", "数量", "积分", "时间", "状态", "操作"]}
+        rows={pageOrders.map((order) => {
+          const product = productMap.get(order.productId);
+          return [
+            order.id,
+            product ? (
+              <ProductArtwork product={product} className="order-product-image" />
+            ) : (
+              <div className="order-product-image product-image"><span>商品图</span></div>
+            ),
+            order.productName,
+            `x${order.quantity ?? 1}`,
+            `${order.points}`,
+            order.createdAt,
+            statusText[order.status],
+            order.status === "pending_pickup" && order.productType === "physical" ? (
+              <button className="danger-button" data-dev-note="cancel-order" onClick={() => onCancel(order.id)}>
+                取消兑换
+              </button>
+            ) : (
+              ""
+            ),
+          ];
+        })}
       />
+      {totalPages > 1 && (
+        <nav className="student-pagination orders-pagination" aria-label="订单分页">
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+            <button
+              key={page}
+              type="button"
+              className={currentPage === page ? "active" : ""}
+              onClick={() => setCurrentPage(page)}
+              aria-current={currentPage === page ? "page" : undefined}
+            >
+              {page}
+            </button>
+          ))}
+          {totalPages > 1 && (
+            <button
+              type="button"
+              aria-label="下一页"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            >
+              <ArrowRightIcon aria-hidden />
+            </button>
+          )}
+        </nav>
+      )}
     </div>
   );
 }
@@ -775,16 +959,63 @@ function ProductAdmin({
   onEdit: (product: Product) => void;
   onToggle: (id: string) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<ProductCategoryFilter>("all");
+  const [tagFilter, setTagFilter] = useState<"all" | ProductTag>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | ProductStatus>("all");
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredProducts = products.filter((product) => {
+    const matchesQuery =
+      !normalizedQuery ||
+      product.name.toLowerCase().includes(normalizedQuery);
+    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+    const matchesTag = tagFilter === "all" || product.tag === tagFilter;
+    const matchesStatus = statusFilter === "all" || product.status === statusFilter;
+    return matchesQuery && matchesCategory && matchesTag && matchesStatus;
+  });
+
   return (
     <div data-dev-note="admin-products-page">
-      <PanelHeader title="后台商品管理页" desc="配置商品、上下架、查看类型和库存状态。" action={<button className="primary-button" data-dev-note="add-product" onClick={onAdd}>新增商品</button>} />
+      <PanelHeader title="后台商品管理页" action={<button className="primary-button" data-dev-note="add-product" onClick={onAdd}>新增商品</button>} />
+      <div className="admin-filters" aria-label="商品筛选">
+        <label>
+          搜索商品
+          <input value={query} placeholder="商品名" onChange={(event) => setQuery(event.target.value)} />
+        </label>
+        <label>
+          商品分类
+          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value as ProductCategoryFilter)}>
+            {productCategoryFilterOptions.map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          商品标签
+          <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value as "all" | ProductTag)}>
+            <option value="all">全部</option>
+            <option value="新品">新品</option>
+            <option value="热门">热门</option>
+            <option value="限时">限时</option>
+          </select>
+        </label>
+        <label>
+          上架状态
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | ProductStatus)}>
+            <option value="all">全部</option>
+            <option value="active">上架</option>
+            <option value="inactive">下架</option>
+          </select>
+        </label>
+      </div>
       <DataTable
-        headers={["商品", "类型", "积分", "库存", "标签", "状态", "交付方式", "操作"]}
-        rows={products.map((product) => [
+        headers={["商品图", "商品", "分类", "积分", "库存", "标签", "状态", "交付方式", "操作"]}
+        rows={filteredProducts.map((product) => [
+          <ProductArtwork product={product} className="admin-product-image" />,
           product.name,
-          typeText[product.type],
+          productCategoryText[product.category],
           `${product.points}`,
-          product.stock <= 3 && product.type === "physical" ? `预警：${product.stock}` : `${product.stock}`,
+          product.stock <= 3 ? `预警：${product.stock}` : `${product.stock}`,
           product.tag,
           <span data-dev-note="product-status">{product.status === "active" ? "上架" : "下架"}</span>,
           product.delivery,
@@ -809,17 +1040,59 @@ function AdminOrders({
   onComplete: (id: string) => void;
   onCancel: (id: string) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredOrders = orders.filter((order) => {
+    const orderDate = order.createdAt.slice(0, 10);
+    const matchesQuery =
+      !normalizedQuery ||
+      [order.id, order.studentName, order.phone, order.productName]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery);
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const matchesStartDate = !startDate || orderDate >= startDate;
+    const matchesEndDate = !endDate || orderDate <= endDate;
+    return matchesQuery && matchesStatus && matchesStartDate && matchesEndDate;
+  });
+
   return (
     <div data-dev-note="admin-orders-page">
-      <PanelHeader title="后台订单管理页" desc="虚拟商品兑换后立即完成；实物商品待领取，可确认领取或取消。" />
+      <PanelHeader title="后台订单管理页" />
+      <div className="admin-filters" aria-label="订单筛选">
+        <label>
+          搜索订单
+          <input value={query} placeholder="订单号 / 学生 / 手机号 / 商品" onChange={(event) => setQuery(event.target.value)} />
+        </label>
+        <label>
+          订单状态
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | OrderStatus)}>
+            <option value="all">全部</option>
+            <option value="pending_pickup">待领取</option>
+            <option value="completed">已完成</option>
+            <option value="cancelled">已取消</option>
+          </select>
+        </label>
+        <label>
+          开始时间
+          <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+        </label>
+        <label>
+          结束时间
+          <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+        </label>
+      </div>
       <DataTable
-        headers={["订单号", "学生 / 手机号", "商品", "数量", "类型", "积分", "下单时间", "状态", "操作"]}
-        rows={orders.map((order) => [
+        headers={["订单号", "学生", "手机号", "商品", "数量", "积分", "下单时间", "状态", "操作"]}
+        rows={filteredOrders.map((order) => [
           order.id,
-          `${order.studentName} / ${order.phone}`,
+          order.studentName,
+          order.phone,
           order.productName,
           `x${order.quantity ?? 1}`,
-          typeText[order.productType],
           `${order.points}`,
           order.createdAt,
           <span data-dev-note="order-status">{statusText[order.status]}</span>,
@@ -829,7 +1102,7 @@ function AdminOrders({
               <button className="danger-button" data-dev-note="cancel-order" onClick={() => onCancel(order.id)}>取消订单</button>
             </div>
           ) : (
-            "只读"
+            ""
           ),
         ])}
       />
@@ -837,13 +1110,205 @@ function AdminOrders({
   );
 }
 
+function OrderVerification({
+  orders,
+  products,
+  onComplete,
+  onCancel,
+}: {
+  orders: Order[];
+  products: Product[];
+  onComplete: (id: string) => void;
+  onCancel: (id: string) => void;
+}) {
+  const [orderIdQuery, setOrderIdQuery] = useState("");
+  const [studentQuery, setStudentQuery] = useState("");
+  const [phoneQuery, setPhoneQuery] = useState("");
+  const normalizedOrderId = orderIdQuery.trim().toLowerCase();
+  const normalizedStudent = studentQuery.trim().toLowerCase();
+  const normalizedPhone = phoneQuery.trim().toLowerCase();
+  const hasVerificationQuery = Boolean(normalizedOrderId || normalizedStudent || normalizedPhone);
+  const productMap = useMemo(
+    () => new Map(products.map((product) => [product.id, product])),
+    [products],
+  );
+  const matchedOrders = hasVerificationQuery
+    ? orders.filter((order) => {
+        const orderId = order.id.toLowerCase();
+        const studentName = order.studentName.toLowerCase();
+        const phone = order.phone.toLowerCase();
+        if (normalizedOrderId) {
+          return (
+            orderId.includes(normalizedOrderId) &&
+            (!normalizedStudent || studentName.includes(normalizedStudent)) &&
+            (!normalizedPhone || phone.includes(normalizedPhone))
+          );
+        }
+        return (
+          order.status === "pending_pickup" &&
+          (!normalizedStudent || studentName.includes(normalizedStudent)) &&
+          (!normalizedPhone || phone.includes(normalizedPhone)) &&
+          Boolean(normalizedStudent || normalizedPhone)
+        );
+      })
+    : [];
+  const verificationOrders = normalizedOrderId ? matchedOrders.slice(0, 1) : matchedOrders;
+
+  return (
+    <div data-dev-note="admin-order-verification-page">
+      <PanelHeader title="兑换核实" />
+      <div className="admin-filters" aria-label="兑换核实搜索">
+        <label>
+          订单号
+          <input
+            value={orderIdQuery}
+            placeholder="输入订单号"
+            onChange={(event) => setOrderIdQuery(event.target.value)}
+          />
+        </label>
+        <label>
+          姓名
+          <input
+            value={studentQuery}
+            placeholder="输入学生姓名"
+            onChange={(event) => setStudentQuery(event.target.value)}
+          />
+        </label>
+        <label>
+          手机号
+          <input
+            value={phoneQuery}
+            placeholder="输入手机号"
+            onChange={(event) => setPhoneQuery(event.target.value)}
+          />
+        </label>
+      </div>
+
+      {!hasVerificationQuery && (
+        <div className="verification-empty">请输入订单号、姓名或手机号，任意填写一项即可核实订单。</div>
+      )}
+      {hasVerificationQuery && verificationOrders.length === 0 && (
+        <div className="verification-empty">未找到匹配订单。</div>
+      )}
+
+      {verificationOrders.length > 0 && (
+        <div className="verification-results">
+          {verificationOrders.map((order) => {
+            const product = productMap.get(order.productId);
+            const canOperate = order.status === "pending_pickup";
+            return (
+              <section className="verification-card" aria-label="兑换核实结果" key={order.id}>
+                <div className="verification-summary">
+                  {product ? (
+                    <ProductArtwork product={product} className="verification-product-image" />
+                  ) : (
+                    <div className="verification-product-image product-image"><span>商品图</span></div>
+                  )}
+                  <div>
+                    <p className="verification-order-id">{order.id}</p>
+                    <h3>{order.productName}</h3>
+                    <span className={`verification-status ${order.status}`}>
+                      {statusText[order.status]}
+                    </span>
+                  </div>
+                </div>
+                <dl className="verification-grid">
+                  <div><dt>学生</dt><dd>{order.studentName}</dd></div>
+                  <div><dt>手机号</dt><dd>{order.phone}</dd></div>
+                  <div><dt>兑换数量</dt><dd>x{order.quantity ?? 1}</dd></div>
+                  <div><dt>扣除积分</dt><dd>{order.points}</dd></div>
+                  <div><dt>下单时间</dt><dd>{order.createdAt}</dd></div>
+                  <div><dt>订单状态</dt><dd>{statusText[order.status]}</dd></div>
+                </dl>
+                <div className="verification-actions">
+                  <button
+                    className="primary-button"
+                    data-dev-note="verify-complete-order"
+                    disabled={!canOperate}
+                    onClick={() => onComplete(order.id)}
+                  >
+                    确认领取
+                  </button>
+                  <button
+                    className="danger-button"
+                    data-dev-note="verify-cancel-order"
+                    disabled={!canOperate}
+                    onClick={() => onCancel(order.id)}
+                  >
+                    取消订单
+                  </button>
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LedgerTable({ ledgers }: { ledgers: Ledger[] }) {
+  const [query, setQuery] = useState("");
+  const [typeFilters, setTypeFilters] = useState<LedgerType[]>([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const ledgerTypes = Array.from(new Set(ledgers.map((ledger) => ledger.type)));
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredLedgers = ledgers.filter((ledger) => {
+    const ledgerDate = ledger.createdAt.slice(0, 10);
+    const matchesQuery =
+      !normalizedQuery ||
+      [ledger.studentName, ledger.orderId, ledger.type]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery);
+    const matchesType = typeFilters.length === 0 || typeFilters.includes(ledger.type);
+    const matchesStartDate = !startDate || ledgerDate >= startDate;
+    const matchesEndDate = !endDate || ledgerDate <= endDate;
+    return matchesQuery && matchesType && matchesStartDate && matchesEndDate;
+  });
+
+  function toggleTypeFilter(type: LedgerType) {
+    setTypeFilters((current) =>
+      current.includes(type) ? current.filter((item) => item !== type) : [...current, type],
+    );
+  }
+
   return (
     <div data-dev-note="ledger-page">
-      <PanelHeader title="后台积分流水页" desc="展示兑换扣减、取消返还、后台调整和虚拟发放记录。" />
+      <PanelHeader title="后台积分流水页" />
+      <div className="admin-filters" aria-label="流水筛选">
+        <label>
+          搜索流水
+          <input value={query} placeholder="学生 / 订单号 / 类型" onChange={(event) => setQuery(event.target.value)} />
+        </label>
+        <label>
+          开始时间
+          <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+        </label>
+        <label>
+          结束时间
+          <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+        </label>
+        <fieldset className="admin-filter-group">
+          <legend>流水类型</legend>
+          <div className="admin-filter-options">
+            {ledgerTypes.map((type) => (
+              <label key={type}>
+                <input
+                  type="checkbox"
+                  checked={typeFilters.includes(type)}
+                  onChange={() => toggleTypeFilter(type)}
+                />
+                {type}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </div>
       <DataTable
         headers={["学生", "类型", "积分变动", "关联订单", "时间", "备注"]}
-        rows={ledgers.map((ledger) => [
+        rows={filteredLedgers.map((ledger) => [
           ledger.studentName,
           ledger.type,
           <span data-dev-note="ledger-change">{ledger.change > 0 ? `+${ledger.change}` : `${ledger.change}`}</span>,
@@ -852,34 +1317,6 @@ function LedgerTable({ ledgers }: { ledgers: Ledger[] }) {
           ledger.note,
         ])}
       />
-    </div>
-  );
-}
-
-function Reports({ stats }: { stats: ReturnType<typeof useDashboardStats> }) {
-  return (
-    <div data-dev-note="reports-page">
-      <PanelHeader title="数据报表" desc="MVP 先用简单图表表达报表方向，不做复杂 BI。" />
-      <div className="two-column">
-        <StatusBlocks
-          title="商品类型占比"
-          items={[
-            ["虚拟商品", stats.productTypes.virtual],
-            ["实物商品", stats.productTypes.physical],
-          ]}
-        />
-        <BarList
-          title="积分消耗趋势"
-          items={[
-            { label: "本月积分消耗", value: stats.monthPoints },
-            { label: "待领取订单", value: stats.pendingCount },
-            { label: "库存预警", value: stats.stockWarningCount },
-          ]}
-        />
-      </div>
-      <div className="mvp-note">
-        本期不做：权限分级、积分有效期、快递配送、支付通道、多规格、复杂限购、指定学员可见、风控冻结、售后补发、Excel 导出、多校区复杂核销。
-      </div>
     </div>
   );
 }
@@ -917,13 +1354,22 @@ function ProductDetail({
   );
 }
 
-function ProductArtwork({ product, large = false }: { product: Product; large?: boolean }) {
+function ProductArtwork({
+  product,
+  large = false,
+  className = "",
+}: {
+  product: Product;
+  large?: boolean;
+  className?: string;
+}) {
   const imageSrc = product.image.trim();
   const normalizedImageSrc = imageSrc.replace(/^\/+/, "");
-  const hasImage = normalizedImageSrc.startsWith("product-images/");
-  const imageUrl = publicAssetPath(normalizedImageSrc);
+  const isUploadedImage = imageSrc.startsWith("data:image/");
+  const hasImage = isUploadedImage || normalizedImageSrc.startsWith("product-images/");
+  const imageUrl = isUploadedImage ? imageSrc : publicAssetPath(normalizedImageSrc);
   return (
-    <div className={`product-image ${large ? "large" : ""}`} aria-label={`${product.name} 商品图`}>
+    <div className={`product-image ${large ? "large" : ""} ${className}`} aria-label={`${product.name} 商品图`}>
       {hasImage ? <img src={imageUrl} alt={product.name} /> : <span>商品图占位</span>}
     </div>
   );
@@ -956,7 +1402,6 @@ function ConfirmExchange({
         <ProductArtwork product={product} large />
         <div className="confirm-copy">
           <h2>{product.name}</h2>
-          <p>{product.description}</p>
           <dl className="detail-list compact">
             <div><dt>单件积分</dt><dd>{product.points}</dd></div>
           </dl>
@@ -981,17 +1426,10 @@ function ConfirmExchange({
             </div>
             <p className="confirm-total">本次将扣除 <strong>{totalPoints}</strong> 积分。</p>
           </div>
-          {product.type === "virtual" ? (
-            <ul>
-              <li>虚拟权益即时发放。</li>
-              <li>兑换后不支持取消。</li>
-            </ul>
-          ) : (
-            <ul>
-              <li>请到校区前台领取。</li>
-              <li>未领取前可取消并返还积分。</li>
-            </ul>
-          )}
+          <ul>
+            <li>请到校区前台领取。</li>
+            <li>未领取前可取消并返还积分。</li>
+          </ul>
         </div>
       </div>
       <div className="modal-actions">
@@ -1012,10 +1450,25 @@ function ProductEditor({
   onSave: (product: Product) => void;
 }) {
   const [draft, setDraft] = useState(product);
-  const canSave = draft.name.trim() && draft.points > 0 && draft.stock >= 0 && draft.description.trim();
+  const canSave = draft.name.trim() && draft.points > 0 && draft.stock >= 0;
+
+  function uploadProductImage(file: File | undefined) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      if (typeof reader.result === "string") {
+        setDraft((current) => ({ ...current, image: reader.result as string }));
+      }
+    });
+    reader.readAsDataURL(file);
+  }
+
   return (
     <Modal title={product.id ? "编辑商品" : "新增商品"} onClose={onCancel}>
       <div className="form-grid" data-dev-note="product-editor">
+        <div className="product-upload-preview">
+          <ProductArtwork product={draft} className="admin-editor-image" />
+        </div>
         <label>
           商品名称
           <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
@@ -1029,10 +1482,19 @@ function ProductEditor({
           />
         </label>
         <label>
-          商品类型
-          <select value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as ProductType })}>
-            <option value="physical">实物商品</option>
-            <option value="virtual">虚拟商品</option>
+          上传商品图
+          <input
+            accept="image/*"
+            type="file"
+            onChange={(event) => uploadProductImage(event.target.files?.[0])}
+          />
+        </label>
+        <label>
+          商品分类
+          <select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as ProductCategory })}>
+            {productCategoryOptions.map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
           </select>
         </label>
         <label>
@@ -1071,53 +1533,15 @@ function ProductEditor({
   );
 }
 
-function PanelHeader({ title, desc, action }: { title: string; desc: string; action?: React.ReactNode }) {
+function PanelHeader({ title, desc, action }: { title: string; desc?: string; action?: React.ReactNode }) {
   return (
     <div className="panel-header">
       <div>
         <h2>{title}</h2>
-        <p>{desc}</p>
+        {desc && <p>{desc}</p>}
       </div>
       {action}
     </div>
-  );
-}
-
-function BarList({ title, items }: { title: string; items: { label: string; value: number }[] }) {
-  const max = Math.max(1, ...items.map((item) => item.value));
-  return (
-    <section className="chart-box">
-      <h3>{title}</h3>
-      {items.length ? (
-        items.map((item) => (
-          <div className="bar-row" key={item.label}>
-            <span>{item.label}</span>
-            <div className="bar-track">
-              <div className="bar-fill" style={{ width: `${Math.max(8, (item.value / max) * 100)}%` }} />
-            </div>
-            <strong>{item.value}</strong>
-          </div>
-        ))
-      ) : (
-        <p className="empty">暂无数据</p>
-      )}
-    </section>
-  );
-}
-
-function StatusBlocks({ title, items }: { title: string; items: [string, number][] }) {
-  return (
-    <section className="chart-box">
-      <h3>{title}</h3>
-      <div className="status-grid">
-        {items.map(([label, value]) => (
-          <div key={label}>
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -1165,16 +1589,4 @@ function Modal({
       </div>
     </div>
   );
-}
-
-function useDashboardStats() {
-  return {
-    todayOrderCount: 0,
-    monthPoints: 0,
-    pendingCount: 0,
-    stockWarningCount: 0,
-    topProducts: [] as { name: string; count: number; points: number }[],
-    productTypes: { virtual: 0, physical: 0 },
-    orderStatus: { pending_pickup: 0, completed: 0, cancelled: 0 },
-  };
 }
