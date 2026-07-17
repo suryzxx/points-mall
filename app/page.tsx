@@ -6,10 +6,12 @@ import { DeveloperMode } from "./DeveloperMode";
 import {
   ArrowRightIcon,
   BackToTopIcon,
+  ChevronDownIcon,
   CloseIcon,
   CollapseRightIcon,
   DailyGoodsIcon,
   ExpandLeftIcon,
+  HelpMessageIcon,
   LearningMaterialIcon,
   MallIcon,
   MinusCircleIcon,
@@ -188,7 +190,7 @@ const initialStore: Store = {
     physicalProduct("p-book-national-geographic", "国家探索", "/product-images/national-geographic.png", "learning", 988, 4, "限时", "探索主题读物，适合课外阅读兑换。"),
     physicalProduct("p-stationery-eraser-2", "思悦定制橡皮2", "/product-images/eraser.png", "stationery", 88, 22, "热门", "思悦定制橡皮，适合课堂和作业订正。"),
     physicalProduct("p-stationery-pencil-box-2", "思悦定制文具盒2", "/product-images/pencil-box.png", "stationery", 388, 6, "新品", "思悦定制文具盒，可收纳常用学习用品。"),
-    physicalProduct("p-sticker-yueyue", "悦悦贴纸", "/product-images/yueyue-sticker.png", "toy", 66, 30, "新品", "悦悦主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-sticker-yueyue", "悦悦贴纸", "/product-images/yueyue-sticker.png", "toy", 1688, 30, "新品", "悦悦主题贴纸，可用于手账和作业奖励。"),
     physicalProduct("p-stationery-notebook-3", "思悦定制笔记本3", "/product-images/notebook.png", "stationery", 288, 11, "限时", "思悦定制笔记本，适合课堂笔记和错题整理。"),
     physicalProduct("p-book-oxford-potato-pals", "牛津小土豆", "/product-images/oxford-potato-pals.png", "learning", 988, 6, "热门", "牛津分级阅读读物，适合英语阅读积累。"),
     physicalProduct("p-stationery-pencil-3", "思悦定制铅笔3", "/product-images/pencil.png", "stationery", 188, 19, "限时", "思悦定制铅笔，适合日常书写练习。"),
@@ -200,12 +202,12 @@ const initialStore: Store = {
     physicalProduct("p-stationery-pencil-4", "思悦定制铅笔4", "/product-images/pencil.png", "stationery", 188, 21, "新品", "思悦定制铅笔，适合日常书写练习。"),
     physicalProduct("p-stationery-eraser-4", "思悦定制橡皮4", "/product-images/eraser.png", "stationery", 88, 23, "限时", "思悦定制橡皮，适合课堂和作业订正。"),
     physicalProduct("p-book-charlottes-web", "夏洛的网", "/product-images/charlottes-web.png", "learning", 988, 3, "热门", "经典文学读物，适合进阶阅读兑换。"),
-    physicalProduct("p-sticker-meimei-2", "梅梅贴纸2", "/product-images/meimei-sticker.png", "toy", 66, 26, "限时", "梅梅主题贴纸，可用于手账和作业奖励。"),
+    physicalProduct("p-sticker-meimei-2", "梅梅贴纸2", "/product-images/meimei-sticker.png", "toy", 66, 0, "限时", "梅梅主题贴纸，可用于手账和作业奖励。"),
     physicalProduct("p-stationery-notebook-5", "思悦定制笔记本5", "/product-images/notebook.png", "stationery", 288, 10, "热门", "思悦定制笔记本，适合课堂笔记和错题整理。"),
     physicalProduct("p-stationery-pencil-5", "思悦定制铅笔5", "/product-images/pencil.png", "stationery", 188, 17, "热门", "思悦定制铅笔，适合日常书写练习。"),
     physicalProduct("p-stationery-pencil-box-4", "思悦定制文具盒4", "/product-images/pencil-box.png", "stationery", 388, 5, "限时", "思悦定制文具盒，可收纳常用学习用品。"),
     physicalProduct("p-stationery-eraser-5", "思悦定制橡皮5", "/product-images/eraser.png", "stationery", 88, 20, "热门", "思悦定制橡皮，适合课堂和作业订正。"),
-    physicalProduct("p-stationery-notebook-6", "思悦定制笔记本6", "/product-images/notebook.png", "stationery", 288, 8, "限时", "思悦定制笔记本，适合课堂笔记和错题整理。"),
+    physicalProduct("p-stationery-notebook-6", "思悦定制笔记本6", "/product-images/notebook.png", "stationery", 288, 0, "限时", "思悦定制笔记本，适合课堂笔记和错题整理。"),
   ],
   inventory: [],
   orders: [
@@ -941,6 +943,7 @@ function StudentMall({
   onConfirm: (id: string) => void;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false);
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
   const filteredProducts = normalizedSearchQuery
     ? products.filter((product) =>
@@ -1030,14 +1033,32 @@ function StudentMall({
         })}
       </div>
       {!filteredProducts.length && <div className="empty">暂无可兑换商品</div>}
-      <button
-        type="button"
-        className="student-back-to-top"
-        aria-label="回到顶部"
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      >
-        <BackToTopIcon aria-hidden />
-      </button>
+      <div className="student-floating-actions">
+        <button
+          type="button"
+          className="student-floating-button"
+          aria-label="兑换说明"
+          onClick={() => setHelpOpen(true)}
+        >
+          <HelpMessageIcon aria-hidden />
+        </button>
+        <button
+          type="button"
+          className="student-floating-button"
+          aria-label="回到顶部"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
+          <BackToTopIcon aria-hidden />
+        </button>
+      </div>
+      {helpOpen && (
+        <Modal title="兑换说明" className="student-help-modal" onClose={() => setHelpOpen(false)}>
+          <div className="student-help-content">
+            <p>兑换成功后请到所选校区前台领取，向工作人员出示兑换记录即可。</p>
+            <p>未领取前可以在“我的兑换”中取消兑换，积分会原路返还。</p>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -1061,6 +1082,8 @@ function StudentOrders({
   );
   const filteredOrders = orders.filter((order) => filter === "all" || order.status === filter);
   const [currentPage, setCurrentPage] = useState(1);
+  const [cancelConfirmOrderId, setCancelConfirmOrderId] = useState<string | null>(null);
+  const cancelConfirmOrder = orders.find((order) => order.id === cancelConfirmOrderId);
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PER_PAGE));
   const pageOrders = filteredOrders.slice(
     (currentPage - 1) * ORDERS_PER_PAGE,
@@ -1074,7 +1097,7 @@ function StudentOrders({
   return (
     <div className="student-orders-view" data-dev-note="student-orders-page">
       <PanelHeader title="我的兑换" />
-      <div className="toolbar">
+      <div className="student-orders-filter">
         <div className="segmented compact" data-dev-note="student-order-filter">
           {[
             ["all", "全部"],
@@ -1088,33 +1111,63 @@ function StudentOrders({
           ))}
         </div>
       </div>
-      <DataTable
-        headers={["订单号", "商品图", "商品", "领取校区", "数量", "积分", "时间", "状态", "操作"]}
-        rows={pageOrders.map((order) => {
+      <div className="student-order-grid">
+        {pageOrders.map((order) => {
           const product = productMap.get(order.productId);
-          return [
-            order.id,
-            product ? (
-              <ProductArtwork product={product} className="order-product-image" />
-            ) : (
-              <div className="order-product-image product-image"><span>商品图</span></div>
-            ),
-            order.productName,
-            order.campusName,
-            `x${order.quantity ?? 1}`,
-            `${order.points}`,
-            order.createdAt,
-            statusText[order.status],
-            order.status === "pending_pickup" && order.productType === "physical" ? (
-              <button className="danger-button" data-dev-note="cancel-order" onClick={() => onCancel(order.id)}>
-                取消兑换
-              </button>
-            ) : (
-              ""
-            ),
-          ];
+          const canCancel = order.status === "pending_pickup" && order.productType === "physical";
+
+          return (
+            <article className="student-order-card" data-dev-note="student-orders-page" key={order.id}>
+              <div className="student-order-title-row">
+                <h3>{order.productName}</h3>
+                <strong>{order.points}<span>积分</span></strong>
+              </div>
+              <div className="student-order-main">
+                <div className="student-order-artwork">
+                  {product ? (
+                    <ProductArtwork product={product} />
+                  ) : (
+                    <div className="product-image"><span>商品图</span></div>
+                  )}
+                </div>
+                <div className="student-order-meta">
+                  <div>
+                    <span>领取校区</span>
+                    <strong>{order.campusName}</strong>
+                  </div>
+                  <div>
+                    <span>数量</span>
+                    <strong>x{order.quantity ?? 1}</strong>
+                  </div>
+                  <div>
+                    <span>兑换时间</span>
+                    <strong>{order.createdAt}</strong>
+                  </div>
+                  <div>
+                    <span>订单号</span>
+                    <strong>{order.id}</strong>
+                  </div>
+                </div>
+              </div>
+              <div className="student-order-actions">
+                {canCancel ? (
+                  <button
+                    type="button"
+                    className="danger-button"
+                    data-dev-note="cancel-order"
+                    onClick={() => setCancelConfirmOrderId(order.id)}
+                  >
+                    取消兑换
+                  </button>
+                ) : (
+                  <span>{statusText[order.status]}</span>
+                )}
+              </div>
+            </article>
+          );
         })}
-      />
+      </div>
+      {!pageOrders.length && <div className="empty">暂无兑换记录</div>}
       {totalPages > 1 && (
         <nav className="student-pagination orders-pagination" aria-label="订单分页">
           {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
@@ -1139,6 +1192,29 @@ function StudentOrders({
             </button>
           )}
         </nav>
+      )}
+      {cancelConfirmOrder && (
+        <Modal title="确认取消兑换" className="student-cancel-modal" onClose={() => setCancelConfirmOrderId(null)}>
+          <div className="student-cancel-content">
+            <h2>是否确认取消兑换？</h2>
+            <p>{cancelConfirmOrder.productName} x{cancelConfirmOrder.quantity ?? 1}</p>
+            <p>取消后将返还 {cancelConfirmOrder.points} 积分，{cancelConfirmOrder.campusName} 将不再为你保留该商品。</p>
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="text-button" onClick={() => setCancelConfirmOrderId(null)}>再想想</button>
+            <button
+              type="button"
+              className="danger-button"
+              data-dev-note="cancel-order"
+              onClick={() => {
+                onCancel(cancelConfirmOrder.id);
+                setCancelConfirmOrderId(null);
+              }}
+            >
+              确认取消
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );
@@ -1753,10 +1829,15 @@ function ConfirmExchange({
     defaultCampusId;
   const [selectedCampusId, setSelectedCampusId] = useState<CampusId>(firstAvailableCampusId);
   const selectedInventory = campusInventory.find((item) => item.campusId === selectedCampusId);
+  const selectedCampus = campuses.find((campus) => campus.id === selectedCampusId) ?? campuses[0];
   const campusAvailable = selectedInventory?.available ?? 0;
   const maxQuantity = Math.max(0, campusAvailable);
   const [quantity, setQuantity] = useState(maxQuantity > 0 ? 1 : 0);
+  const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
+  const [confirmStep, setConfirmStep] = useState<"edit" | "review">("edit");
   const totalPoints = product.points * quantity;
+  const allCampusesOutOfStock = !campusInventory.some((item) => item.available > 0);
+  const insufficientPoints = studentPoints < product.points;
   const disabled = quantity < 1 || quantity > maxQuantity || campusAvailable <= 0 || studentPoints < totalPoints;
 
   useEffect(() => {
@@ -1774,61 +1855,130 @@ function ConfirmExchange({
     setQuantity(Math.max(1, Math.min(maxQuantity, Math.floor(nextQuantity) || 1)));
   }
 
+  function selectCampus(campusId: CampusId, available: number) {
+    if (available <= 0) return;
+    setSelectedCampusId(campusId);
+    setCampusDropdownOpen(false);
+  }
+
+  function goToReview() {
+    if (disabled) return;
+    setCampusDropdownOpen(false);
+    setConfirmStep("review");
+  }
+
   return (
     <Modal title="兑换确认" className="exchange-modal" onClose={onCancel}>
-      <div className="confirm-exchange-layout" data-dev-note="exchange-confirm">
-        <ProductArtwork product={product} large />
-        <div className="confirm-copy">
-          <h2>{product.name}</h2>
-          <dl className="detail-list compact">
-            <div><dt>单件积分</dt><dd>{product.points}</dd></div>
-            <div>
-              <dt>领取校区</dt>
-              <dd>
-                <select value={selectedCampusId} onChange={(event) => setSelectedCampusId(event.target.value as CampusId)}>
-                  {campuses.map((campus) => {
-                    const item = campusInventory.find((stock) => stock.campusId === campus.id);
-                    const available = item?.available ?? 0;
-                    return (
-                      <option key={campus.id} value={campus.id} disabled={available <= 0}>
-                        {campus.name}（可用 {available}）
-                      </option>
-                    );
-                  })}
-                </select>
-              </dd>
-            </div>
-          </dl>
-          <div className="confirm-purchase-row">
-            <div className="quantity-picker" aria-label="选择商品数量">
-              <span>兑换数量</span>
-              <div>
-                <button type="button" disabled={quantity <= 1} onClick={() => updateQuantity(quantity - 1)}>
-                  <MinusCircleIcon aria-hidden />
-                </button>
-                <input
-                  type="number"
-                  min={1}
-                  max={maxQuantity}
-                  value={quantity}
-                  onChange={(event) => updateQuantity(Number(event.target.value))}
-                />
-                <button type="button" disabled={quantity >= maxQuantity} onClick={() => updateQuantity(quantity + 1)}>
-                  <PlusCircleIcon aria-hidden />
-                </button>
+      <div className={`exchange-step-viewport ${confirmStep === "review" ? "reviewing" : ""}`} data-dev-note="exchange-confirm">
+        <div className="exchange-step-track">
+          <div className="exchange-step-panel">
+            <div className="confirm-exchange-layout">
+              <ProductArtwork product={product} large />
+              <div className="confirm-copy">
+                <h2>{product.name}</h2>
+                <div className="confirm-summary-grid">
+                  <div className={`confirm-summary-item ${insufficientPoints ? "danger" : ""}`} data-dev-note="exchange-unit-points">
+                    <span>单件积分 {insufficientPoints ? <em>积分不足</em> : null}</span>
+                    <strong>{product.points}</strong>
+                  </div>
+                  <div className={`confirm-summary-item ${insufficientPoints ? "danger" : ""}`} data-dev-note="exchange-campus-available">
+                    <span>当前可领取</span>
+                    <strong>{campusAvailable}</strong>
+                  </div>
+                </div>
+                <div className="campus-select-field" data-dev-note="exchange-campus-default">
+                  <span className="campus-select-label">
+                    领取校区
+                    {allCampusesOutOfStock ? <strong>该商品当前所有校区均暂无库存，暂时不能兑换。</strong> : null}
+                  </span>
+                  <div className={`campus-select ${campusDropdownOpen ? "open" : ""}`}>
+                    <button
+                      type="button"
+                      className="campus-select-trigger"
+                      aria-haspopup="listbox"
+                      aria-expanded={campusDropdownOpen}
+                      onClick={() => setCampusDropdownOpen((open) => !open)}
+                    >
+                      <span>
+                        <strong>{selectedCampus.name}</strong>
+                        <small>库存 {campusAvailable}</small>
+                      </span>
+                      <ChevronDownIcon aria-hidden />
+                    </button>
+                    {campusDropdownOpen && (
+                      <div className="campus-select-menu" role="listbox" aria-label="领取校区" data-dev-note="exchange-campus-list">
+                        {campuses.map((campus) => {
+                          const item = campusInventory.find((stock) => stock.campusId === campus.id);
+                          const available = item?.available ?? 0;
+                          const selected = selectedCampusId === campus.id;
+
+                          return (
+                            <button
+                              key={campus.id}
+                              type="button"
+                              role="option"
+                              aria-selected={selected}
+                              disabled={available <= 0}
+                              className={selected ? "selected" : ""}
+                              onClick={() => selectCampus(campus.id, available)}
+                            >
+                              <span>{campus.name}</span>
+                              <small>{available > 0 ? `库存 ${available}` : "暂无库存"}</small>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="confirm-purchase-row">
+                  <div className="quantity-picker" aria-label="选择商品数量" data-dev-note="exchange-quantity">
+                    <span>兑换数量</span>
+                    <div>
+                      <button type="button" disabled={quantity <= 1} onClick={() => updateQuantity(quantity - 1)}>
+                        <MinusCircleIcon aria-hidden />
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={maxQuantity}
+                        value={quantity}
+                        onChange={(event) => updateQuantity(Number(event.target.value))}
+                      />
+                      <button type="button" disabled={quantity >= maxQuantity} onClick={() => updateQuantity(quantity + 1)}>
+                        <PlusCircleIcon aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="confirm-total">本次将扣除 <strong>{totalPoints}</strong> 积分。</p>
+                </div>
               </div>
             </div>
-            <p className="confirm-total">本次将扣除 <strong>{totalPoints}</strong> 积分。</p>
           </div>
-          <ul>
-            <li>请到校区前台领取。</li>
-            <li>未领取前可取消并返还积分。</li>
-          </ul>
+
+          <div className="exchange-step-panel">
+            <div className="exchange-review-panel">
+              <h2>是否确认兑换？</h2>
+              <div className="exchange-review-message">
+                <p><strong>{product.name}</strong> <strong>x{quantity}</strong></p>
+                <p>确认兑换后将扣除 <strong>{totalPoints}</strong> 积分，<strong>{selectedCampus.name}</strong> 将为你保留该商品。</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div className="modal-actions">
-        <button className="text-button" onClick={onCancel}>再想想</button>
-        <button className="primary-button" data-dev-note="exchange-confirm" disabled={disabled} onClick={() => onSubmit(quantity, selectedCampusId)}>确认兑换</button>
+        {confirmStep === "edit" ? (
+          <>
+            <button className="text-button" onClick={onCancel}>再想想</button>
+            <button className="primary-button" data-dev-note="exchange-confirm" disabled={disabled} onClick={goToReview}>下一步</button>
+          </>
+        ) : (
+          <>
+            <button className="text-button" onClick={() => setConfirmStep("edit")}>上一步</button>
+            <button className="primary-button" data-dev-note="exchange-confirm" disabled={disabled} onClick={() => onSubmit(quantity, selectedCampusId)}>确认兑换</button>
+          </>
+        )}
       </div>
     </Modal>
   );

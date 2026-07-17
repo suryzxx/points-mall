@@ -91,8 +91,9 @@ export function DeveloperMode() {
     }
 
     function collectMarkers() {
+      const markerScope = getMarkerScope();
       const seen = new Set<string>();
-      const nextMarkers = Array.from(document.querySelectorAll<HTMLElement>("[data-dev-note]"))
+      const nextMarkers = Array.from(markerScope.querySelectorAll<HTMLElement>("[data-dev-note]"))
         .map((element) => {
           const id = element.dataset.devNote;
           if (!id || seen.has(id)) return null;
@@ -177,6 +178,11 @@ export function DeveloperMode() {
       )}
     </>
   );
+}
+
+function getMarkerScope() {
+  const modals = document.querySelectorAll<HTMLElement>(".modal");
+  return modals[modals.length - 1] ?? document.body;
 }
 
 function getPopoverStyle(marker: Marker): CSSProperties {
