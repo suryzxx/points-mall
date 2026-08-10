@@ -100,7 +100,7 @@ type Store = {
 
 type ViewMode = "student" | "admin";
 type StudentPage = "mall" | "orders";
-type AdminPage = "products" | "inventory" | "verify" | "orders" | "ledger";
+type AdminPage = "products" | "inventory" | "verify" | "orders" | "points" | "ledger";
 
 const STORAGE_KEY = "points-mall-mvp-state";
 const STORE_SCHEMA_VERSION = 2;
@@ -773,6 +773,32 @@ export default function PointsMallMvp() {
     }));
   }
 
+  function adjustStudentPoints(nextPoints: number, operator: string) {
+    const normalizedPoints = Math.max(0, Math.floor(nextPoints));
+    setStore((current) => {
+      const change = normalizedPoints - current.student.points;
+      if (change === 0) return current;
+      return {
+        ...current,
+        student: {
+          ...current.student,
+          points: normalizedPoints,
+        },
+        ledgers: [
+          addLedger({
+            studentName: current.student.name,
+            type: "后台调整",
+            change,
+            orderId: "-",
+            operator,
+            note: `后台修改积分：${current.student.points} -> ${normalizedPoints}，变动 ${change > 0 ? `+${change}` : change}，修改人：${operator}。`,
+          }),
+          ...current.ledgers,
+        ],
+      };
+    });
+  }
+
   function toggleProductStatus(productId: string) {
     setStore((current) => ({
       ...current,
@@ -859,6 +885,7 @@ export default function PointsMallMvp() {
                 ["inventory", "库存管理"],
                 ["verify", "兑换核实"],
                 ["orders", "订单管理"],
+                ["points", "积分管理"],
                 ["ledger", "积分流水"],
               ].map(([key, label]) => (
                 <button
@@ -902,6 +929,13 @@ export default function PointsMallMvp() {
                   orders={store.orders}
                   onComplete={completeOrder}
                   onCancel={(orderId) => cancelOrder(orderId, currentAdminOperator)}
+                />
+              )}
+              {adminPage === "points" && (
+                <PointsAdmin
+                  student={store.student}
+                  operator={currentAdminOperator}
+                  onAdjustPoints={(points) => adjustStudentPoints(points, currentAdminOperator)}
                 />
               )}
               {adminPage === "ledger" && <LedgerTable ledgers={store.ledgers} />}
@@ -1025,14 +1059,14 @@ function StudentMall({
     : products;
 
   return (
-    <div className="student-mall-view" data-dev-note="student-mall-page">
+    <div className="student-mall-view">
       <section
         className="student-hero"
         style={{ "--student-hero-image": `url(${publicAssetPath("hero-bg.png")})` } as CSSProperties}
       >
         <div>
           <p className="student-kicker">SIYUE POINTS MALL</p>
-          <h2>积分好礼兑换</h2>
+          <h2 data-dev-note="student-mall-page">积分好礼兑换</h2>
         </div>
       </section>
       <div className="student-filter-bar">
@@ -1165,8 +1199,8 @@ function StudentOrders({
   }, [filter, orders.length]);
 
   return (
-    <div className="student-orders-view" data-dev-note="student-orders-page">
-      <PanelHeader title="我的兑换" />
+    <div className="student-orders-view">
+      <PanelHeader title="我的兑换" titleDevNote="student-orders-page" />
       <div className="student-orders-filter">
         <div className="segmented compact" data-dev-note="student-order-filter">
           {[
@@ -1187,7 +1221,7 @@ function StudentOrders({
           const canCancel = order.status === "pending_pickup" && order.productType === "physical";
 
           return (
-            <article className="student-order-card" data-dev-note="student-orders-page" key={order.id}>
+            <article className="student-order-card" key={order.id}>
               <div className="student-order-title-row">
                 <h3>{order.productName}</h3>
                 <strong>{order.points}<span>积分</span></strong>
@@ -1341,10 +1375,18 @@ function ProductAdmin({
     setCurrentPage((page) => Math.min(page, totalPages));
   }, [totalPages]);
 
+  function resetFilters() {
+    setQuery("");
+    setCategoryFilter("all");
+    setTagFilter("all");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  }
+
   return (
     <div>
       <PanelHeader title="后台商品管理页" titleDevNote="admin-products-page" action={<button className="primary-button" onClick={onAdd}>新增商品</button>} />
-      <div className="admin-filters" aria-label="商品筛选">
+      <div className="admin-filters with-reset" aria-label="商品筛选">
         <label>
           搜索商品
           <input value={query} placeholder="商品名" onChange={(event) => setQuery(event.target.value)} />
@@ -1374,6 +1416,7 @@ function ProductAdmin({
             <option value="inactive">下架</option>
           </select>
         </label>
+        <button type="button" className="ghost-button admin-filter-reset" onClick={resetFilters}>重置</button>
       </div>
       <DataTable
         headers={["商品图", "商品", "分类", "积分", "总库存", "标签", "状态", "交付方式", "操作"]}
@@ -1536,7 +1579,7 @@ function AdminOrders({
     const orderDate = order.createdAt.slice(0, 10);
     const matchesQuery =
       !normalizedQuery ||
-      [order.id, order.studentName, order.phone, order.productName, order.campusName]
+      [order.id, order.studentName, order.productName, order.campusName]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery);
@@ -1561,12 +1604,12 @@ function AdminOrders({
   }, [totalPages]);
 
   return (
-    <div data-dev-note="admin-orders-page">
-      <PanelHeader title="后台订单管理页" />
-      <div className="admin-filters" aria-label="订单筛选">
+    <div>
+      <PanelHeader title="后台订单管理页" titleDevNote="admin-orders-page" />
+      <div className="admin-filters admin-order-filters" aria-label="订单筛选">
         <label>
           搜索订单
-          <input value={query} placeholder="订单号 / 学生 / 手机号 / 商品" onChange={(event) => setQuery(event.target.value)} />
+          <input value={query} placeholder="订单号 / 学生 / 商品" onChange={(event) => setQuery(event.target.value)} />
         </label>
         <label>
           订单状态
@@ -1692,9 +1735,9 @@ function OrderVerification({
   }, [totalPages]);
 
   return (
-    <div data-dev-note="admin-order-verification-page">
-      <PanelHeader title="兑换核实" />
-      <div className="verification-operator" data-dev-note="admin-order-verification-page">
+    <div>
+      <PanelHeader title="兑换核实" titleDevNote="admin-order-verification-page" />
+      <div className="verification-operator">
         当前操作用户：<strong>{operator}</strong>
       </div>
       <div className="admin-filters" aria-label="兑换核实搜索">
@@ -1805,9 +1848,159 @@ function OrderVerification({
   );
 }
 
+function PointsAdmin({
+  student,
+  operator,
+  onAdjustPoints,
+}: {
+  student: Store["student"];
+  operator: string;
+  onAdjustPoints: (points: number) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [editing, setEditing] = useState(false);
+  const normalizedQuery = query.trim().toLowerCase();
+  const rows = [student].filter((item) => !normalizedQuery || item.name.toLowerCase().includes(normalizedQuery));
+  const totalPages = Math.max(1, Math.ceil(rows.length / ADMIN_ROWS_PER_PAGE));
+  const pageRows = rows.slice(
+    (currentPage - 1) * ADMIN_ROWS_PER_PAGE,
+    currentPage * ADMIN_ROWS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+
+  return (
+    <div>
+      <PanelHeader title="积分管理" titleDevNote="points-admin-page" />
+      <div className="admin-filters" aria-label="积分筛选">
+        <label>
+          搜索学生
+          <input value={query} placeholder="学生姓名" onChange={(event) => setQuery(event.target.value)} />
+        </label>
+      </div>
+      <DataTable
+        headers={["学生姓名", "手机号", "积分值", "操作"]}
+        rows={pageRows.map((item) => [
+          item.name,
+          item.phone,
+          `${item.points}`,
+          <button className="ghost-button" data-dev-note="adjust-points" onClick={() => setEditing(true)}>修改积分</button>,
+        ])}
+      />
+      <AdminPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={rows.length}
+        onPageChange={setCurrentPage}
+      />
+      {editing && (
+        <PointsEditor
+          student={student}
+          operator={operator}
+          onCancel={() => setEditing(false)}
+          onSave={(points) => {
+            onAdjustPoints(points);
+            setEditing(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function PointsEditor({
+  student,
+  operator,
+  onCancel,
+  onSave,
+}: {
+  student: Store["student"];
+  operator: string;
+  onCancel: () => void;
+  onSave: (points: number) => void;
+}) {
+  const [draftPoints, setDraftPoints] = useState(`${student.points}`);
+  const [confirming, setConfirming] = useState(false);
+  const nextPoints = Number(draftPoints);
+  const change = nextPoints - student.points;
+  const canContinue = Boolean(draftPoints.trim() && Number.isFinite(nextPoints) && nextPoints >= 0 && change !== 0);
+
+  return (
+    <Modal title={confirming ? "确认修改积分" : "修改积分"} onClose={onCancel}>
+      {confirming ? (
+        <div className="confirm-adjustment" data-dev-note="adjust-points">
+          <dl className="form-readonly-summary full">
+            <div>
+              <dt>学生</dt>
+              <dd>{student.name}</dd>
+            </div>
+            <div>
+              <dt>修改人</dt>
+              <dd>{operator}</dd>
+            </div>
+            <div>
+              <dt>原积分</dt>
+              <dd>{student.points}</dd>
+            </div>
+            <div>
+              <dt>新积分</dt>
+              <dd>{nextPoints}</dd>
+            </div>
+            <div>
+              <dt>修改量</dt>
+              <dd>{change > 0 ? `+${change}` : change}</dd>
+            </div>
+          </dl>
+        </div>
+      ) : (
+        <div className="form-grid" data-dev-note="adjust-points">
+          <dl className="form-readonly-summary full">
+            <div>
+              <dt>学生</dt>
+              <dd>{student.name}</dd>
+            </div>
+            <div>
+              <dt>手机号</dt>
+              <dd>{student.phone}</dd>
+            </div>
+          </dl>
+          <label className="full">
+            积分值
+            <input
+              min={0}
+              required
+              type="number"
+              value={draftPoints}
+              onChange={(event) => setDraftPoints(event.target.value)}
+            />
+          </label>
+        </div>
+      )}
+      <div className="modal-actions">
+        <button className="ghost-button" onClick={confirming ? () => setConfirming(false) : onCancel}>
+          {confirming ? "上一步" : "取消"}
+        </button>
+        {confirming ? (
+          <button className="primary-button" data-dev-note="adjust-points" onClick={() => onSave(nextPoints)}>确认修改</button>
+        ) : (
+          <button className="primary-button" data-dev-note="adjust-points" disabled={!canContinue} onClick={() => setConfirming(true)}>下一步</button>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 function LedgerTable({ ledgers }: { ledgers: Ledger[] }) {
   const [query, setQuery] = useState("");
   const [typeFilters, setTypeFilters] = useState<LedgerType[]>([]);
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -1846,10 +2039,19 @@ function LedgerTable({ ledgers }: { ledgers: Ledger[] }) {
     );
   }
 
+  function resetFilters() {
+    setQuery("");
+    setTypeFilters([]);
+    setTypeDropdownOpen(false);
+    setStartDate("");
+    setEndDate("");
+    setCurrentPage(1);
+  }
+
   return (
-    <div data-dev-note="ledger-page">
-      <PanelHeader title="后台积分流水页" />
-      <div className="admin-filters" aria-label="流水筛选">
+    <div>
+      <PanelHeader title="后台积分流水页" titleDevNote="ledger-page" />
+      <div className="admin-filters with-reset" aria-label="流水筛选">
         <label>
           搜索流水
           <input value={query} placeholder="学生 / 订单号 / 类型 / 操作者" onChange={(event) => setQuery(event.target.value)} />
@@ -1862,21 +2064,40 @@ function LedgerTable({ ledgers }: { ledgers: Ledger[] }) {
           结束时间
           <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
         </label>
-        <fieldset className="admin-filter-group">
-          <legend>流水类型</legend>
-          <div className="admin-filter-options">
-            {ledgerTypes.map((type) => (
-              <label key={type}>
+        <div className="admin-multiselect">
+          <span>流水类型</span>
+          <button
+            type="button"
+            className="admin-multiselect-trigger"
+            aria-expanded={typeDropdownOpen}
+            onClick={() => setTypeDropdownOpen((open) => !open)}
+          >
+            {typeFilters.length ? `已选 ${typeFilters.length} 项` : "全部类型"}
+          </button>
+          {typeDropdownOpen && (
+            <div className="admin-multiselect-menu">
+              <label>
                 <input
                   type="checkbox"
-                  checked={typeFilters.includes(type)}
-                  onChange={() => toggleTypeFilter(type)}
+                  checked={typeFilters.length === 0}
+                  onChange={() => setTypeFilters([])}
                 />
-                {type}
+                全部类型
               </label>
-            ))}
-          </div>
-        </fieldset>
+              {ledgerTypes.map((type) => (
+                <label key={type}>
+                  <input
+                    type="checkbox"
+                    checked={typeFilters.includes(type)}
+                    onChange={() => toggleTypeFilter(type)}
+                  />
+                  {type}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+        <button type="button" className="ghost-button admin-filter-reset" onClick={resetFilters}>重置</button>
       </div>
       <DataTable
         headers={["学生", "类型", "积分变动", "关联订单", "操作者", "时间", "备注"]}
@@ -1954,8 +2175,8 @@ function ProductDetail({
 }) {
   const disabled = product.status !== "active";
   return (
-    <Modal title="学生端商品详情页" onClose={onClose}>
-      <div className="detail-layout" data-dev-note="product-detail">
+    <Modal title="学生端商品详情页" titleDevNote="product-detail" onClose={onClose}>
+      <div className="detail-layout">
         <ProductArtwork product={product} large />
         <div>
           <h2>{product.name}</h2>
@@ -2423,11 +2644,13 @@ function DataTable({ headers, rows }: { headers: string[]; rows: React.ReactNode
 
 function Modal({
   title,
+  titleDevNote,
   children,
   className,
   onClose,
 }: {
   title: string;
+  titleDevNote?: string;
   children: React.ReactNode;
   className?: string;
   onClose: () => void;
@@ -2436,7 +2659,7 @@ function Modal({
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={title}>
       <div className={`modal ${className ?? ""}`}>
         <div className="modal-header">
-          <h2>{title}</h2>
+          <h2 data-dev-note={titleDevNote}>{title}</h2>
           <button className="modal-close-button" onClick={onClose} aria-label="关闭">
             <CloseIcon aria-hidden />
           </button>

@@ -1071,10 +1071,18 @@ button:disabled {
 
 .admin-filters {
   display: grid;
-  grid-template-columns: minmax(240px, 400px) repeat(3, minmax(150px, 200px));
+  grid-template-columns: repeat(4, minmax(150px, 200px));
   gap: 12px;
   align-items: end;
   margin-bottom: 16px;
+}
+
+.admin-order-filters {
+  grid-template-columns: repeat(5, minmax(140px, 180px));
+}
+
+.admin-filters.with-reset {
+  grid-template-columns: repeat(4, minmax(150px, 200px)) 70px;
 }
 
 .admin-filters label {
@@ -1087,6 +1095,14 @@ button:disabled {
 .admin-filters input,
 .admin-filters select {
   min-height: 38px;
+}
+
+.admin-filter-reset {
+  align-self: end;
+  width: 70px;
+  min-width: 70px;
+  min-height: 38px;
+  padding: 0;
 }
 
 .admin-filter-group {
@@ -1119,6 +1135,51 @@ button:disabled {
 }
 
 .admin-filter-options input {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+}
+
+.admin-multiselect {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  color: #344054;
+  font-size: 14px;
+}
+
+.admin-multiselect-trigger {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--foreground);
+  padding: 0 10px;
+  text-align: left;
+}
+
+.admin-multiselect-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  width: min(260px, 100vw - 32px);
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  padding: 10px;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
+}
+
+.admin-multiselect-menu label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--foreground);
+}
+
+.admin-multiselect-menu input {
   width: auto;
   min-height: 0;
   margin: 0;
